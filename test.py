@@ -3,8 +3,14 @@ import time
 
 try:
     while True:
+        # Pobieramy aktualną pozycję kursora
         x, y = pyautogui.position()
-        print(f'Współrzędne kursora: ({x}, {y})')
+        
+        # Wypisujemy aktualne współrzędne kursora
+        print(f'Pozycja kursora: x={x}, y={y}')
+        
+        # Czekamy 1 sekundę
         time.sleep(1)
+        
 except KeyboardInterrupt:
-    print("\nProgram zakończony.")
+    print("\nPrzerwano program.")
