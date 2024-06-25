@@ -1,103 +1,262 @@
 import time
 from selenium import webdriver
 import pyautogui
-from openpyxl import load_workbook
+import re
 import tkinter as tk
 from tkinter import simpledialog
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-import re
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-#Przejście zakładkami na kolejny formularz
-def KolejnyFormularz():
-    time.sleep(.1)
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+def get_user_input(prompt):
+    root = tk.Tk()
+    root.withdraw()
+    user_input = simpledialog.askstring(title="Dane użytkownika", prompt=prompt)
+    return user_input
+
+imie = get_user_input("Podaj imię:").upper().strip()
+nazwisko = get_user_input("Podaj nazwisko:").upper().strip()
+rok_rozliczenia = get_user_input("Podaj rok:").strip()
+
+# Google Sheets authentication
+SERVICE_ACCOUNT_FILE = 'excel.json'
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+SPREADSHEET_ID = '1k4UVgLa00Hqa7le3QPbwQMSXwpnYPlvcEQTxXqTEY4U'
+SHEET_NAME_1 = 'ZP dane kont'
+SHEET_NAME_2 = 'ZP status'
+
+# Authenticate and initialize the Google Sheets client
+credentials = ServiceAccountCredentials.from_json_keyfile_name(SERVICE_ACCOUNT_FILE, SCOPES)
+client = gspread.authorize(credentials)
+ws1 = client.open_by_key(SPREADSHEET_ID).worksheet(SHEET_NAME_1)
+ws2 = client.open_by_key(SPREADSHEET_ID).worksheet(SHEET_NAME_2)
+
+driver = webdriver.Chrome()
+url = 'https://www.formulare-bfinv.de/ffw/form/display.do?%24context=2802C5863D1DB0B5962F'
+driver.get(url)
+
+def kolejnyFormularz():
+    time.sleep(0.1)
     window_handles = driver.window_handles
-    # Przełączenie się na pierwsze otwarte okno
     driver.switch_to.window(window_handles[1])
-    time.sleep(.2)
+    time.sleep(0.2)
     driver.close()
-    time.sleep(.2)
+    time.sleep(0.2)
     driver.switch_to.window(window_handles[0])
-    time.sleep(.2)
-    newurl='https://www.formulare-bfinv.de/ffw/content.do'
-    driver.get(newurl)
+    time.sleep(0.2)
+    new_url = 'https://www.formulare-bfinv.de/ffw/content.do'
+    driver.get(new_url)
 
 def wait_and_send_keys(xpath, value):
     element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, xpath)))
     element.send_keys(value)
 
-#Ścieżka do wyboru dokumentu
-def PierwszaZgoda():
+def pierwsza_zgoda():
     driver.maximize_window()
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="datenschutz"]/button'))).click()
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[5]/div[2]/ul/li[3]/div/div/div[1]/a/div/div[2]'))).click()
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="lip_formcatalog"]/div[2]/div[2]/div[2]/ul/li[5]/div/a/span'))).click()
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="lip_formcatalog"]/div[2]/div[2]/div[2]/ul/li[6]/div/a/span'))).click()
-# Funkcja do pobierania danych z okienka dialogowego
-def get_user_input(prompt):
-    root = tk.Tk()
-    root.withdraw()  # Ukryj główne okno
-    user_input = simpledialog.askstring(title="Dane użytkownika", prompt=prompt)
-    return user_input
 
-#POBIERANIE 
+def clean_data(cell_value):
+    if cell_value is None or (isinstance(cell_value, str) and cell_value.strip() == ""):
+        return None
+    if isinstance(cell_value, str):
+        return re.sub(r'[.,\'"]', '', cell_value).strip()
+    return cell_value
+
 def PobieranieFormularza():
-    time.sleep(.3)
-    Printout = driver.find_element("xpath",'/html/body/div[4]/form/div[6]/div/div/div[1]/div[2]/div[1]/div/div[3]/input').click()
+    time.sleep(0.1)
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[4]/form/div[6]/div/div/div[1]/div[2]/div[1]/div/div[3]/input'))).click()
     time.sleep(3)
-
-    ShowPrintout = driver.find_element("xpath",'/html/body/div[4]/form/div[7]/div/div[1]/div/div[2]/p/a').click()
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[4]/form/div[7]/div/div[1]/div/div[2]/p/a'))).click()
     time.sleep(1)
-
     pyautogui.hotkey('ctrl', 's')
-    time.sleep(2)
-
+    time.sleep(0.5)
     pyautogui.click(x=653, y=73)
-    time.sleep(1)
-
+    time.sleep(0.5)
     save_path = "C:\\Users\\Kamil\\Downloads"
     pyautogui.typewrite(save_path)
-    time.sleep(.5)
+    time.sleep(0.5)
     pyautogui.press('enter')
-    time.sleep(.5)
+    time.sleep(0.5)
     pyautogui.click(x=992, y=633)
     time.sleep(1)
 
-# Pobieranie imienia i nazwiska
-imie = get_user_input("Podaj imię:")
-nazwisko = get_user_input("Podaj nazwisko:")
-imie = imie.upper().strip()
-nazwisko = nazwisko.upper().strip()
-
-#WYPEŁNIANIE FORMULARZA
-wb = load_workbook('Dane1.xlsx')
-ws = wb['ZP Dane kont']
-
-#Włączenie strony do rozliczania
-driver = webdriver.Chrome()
-url='https://www.formulare-bfinv.de/ffw/form/display.do?%24context=2802C5863D1DB0B5962F'
-driver.get(url)
+data = ws1.get_all_values()
 row = None
-for i in range(1, ws.max_row + 1):
-    if ws[f'A{i}'].value == imie and ws[f'B{i}'].value == nazwisko:
-        row = i
+for i, row_data in enumerate(data):
+    if row_data[0] == imie and row_data[1] == nazwisko:
+        row = i + 1
         break
+
 if row is None:
     print("Nie znaleziono danych dla podanej osoby.")
     driver.quit()
     exit()
-stnum = ws[f'J{row}'].value
-def WypelnijImieNazwiskoST():
-    name = driver.find_element("xpath", '//*[@id="name"]')
-    name.send_keys(nazwisko)
-    time.sleep(.1)
-    vorname = driver.find_element("xpath", '//*[@id="vorname"]')
-    vorname.send_keys(imie)
-    time.sleep(.1)
-    if stnum is not None:
-            driver.find_element("xpath",'//*[@id="steuernummer"]').send_keys(stnum)
-    
+
+status_data = ws2.get_all_values()
+row2 = None
+for i, row_data2 in enumerate(status_data):
+    full_name = row_data2[0]
+    if full_name:
+        full_name_parts = full_name.split()
+        if full_name_parts[0] == nazwisko and full_name_parts[1] == imie  and row_data2[2] == rok_rozliczenia:
+            row2 = i + 1
+            break
+
+imie = imie.upper().strip()
+nazwisko = nazwisko.upper().strip()
+biuro = data[row-1][2].upper().strip()
+nr_telefonu = data[row-1][3]
+email = data[row-1][4]
+stan_cywilny = data[row-1][5].upper().strip()
+numer_konta_bankowego = data[row-1][6]
+swift = data[row-1][7].upper().strip()
+finanzamt = data[row-1][8].upper()
+steuernummer = data[row-1][9]
+id_nr_meza = data[row-1][10]
+id_nr_zony = data[row-1][11]
+data_urodzenia_meza = data[row-1][12]
+religia = data[row-1][13].upper().strip()
+ulica = data[row-1][14].upper()
+miejscowosc = data[row-1][15].upper()
+data_slubu = data[row-1][16]
+data_urodzenia_zony = data[row-1][17]
+imie_zony = data[row-1][18]
+
+imie_nazwisko_numer = clean_data(status_data[row2-1][0])
+status_de = clean_data(status_data[row2-1][1]).upper()
+rok_rozliczenia = clean_data(status_data[row2-1][2])
+zwrot = clean_data(status_data[row2-1][3])
+opiekun = clean_data(status_data[row2-1][4]).upper()
+uwagi = clean_data(status_data[row2-1][5])
+poinformowany = clean_data(status_data[row2-1][6]).upper().strip()
+wyslany = clean_data(status_data[row2-1][7]).upper().strip()
+fahrkosten = clean_data(status_data[row2-1][8])
+ubernachtung = clean_data(status_data[row2-1][9])
+h24 = clean_data(status_data[row2-1][10])
+h8 = clean_data(status_data[row2-1][11])
+w_kabinie = clean_data(status_data[row2-1][12])
+an_und_ab = clean_data(status_data[row2-1][13])
+kind = clean_data(status_data[row2-1][14])
+cena = clean_data(status_data[row2-1][15]).strip()
+status_platnosci = clean_data(status_data[row2-1][16]).upper().strip()
+zaplacono = clean_data(status_data[row2-1][17])
+forma_zaplaty = clean_data(status_data[row2-1][18]).upper().strip()
+nr_faktury = clean_data(status_data[row2-1][19])
+data_wystawienia_faktury = clean_data(status_data[row2-1][20])
+ZarobkiMezaNiem = clean_data(status_data[row2-1][21])
+ZarobkiZonyNiem = clean_data(status_data[row2-1][22])
+nr22 = clean_data(status_data[row2-1][23])
+nr23 = clean_data(status_data[row2-1][24])
+nr25 = clean_data(status_data[row2-1][25])
+nr26 = clean_data(status_data[row2-1][26])
+nr27 = clean_data(status_data[row2-1][27])
+pracodawca = clean_data(status_data[row2-1][28])
+chorobowe = clean_data(status_data[row2-1][29])
+
+klasa_pit1 = clean_data(status_data[row2-1][30])
+if klasa_pit1:
+    klasa_pit1 = int(klasa_pit1)
+else:
+    klasa_pit1 = 0
+brutto_pit1 = clean_data(status_data[row2-1][31])
+if brutto_pit1:
+    brutto_pit1 = int(brutto_pit1)
+else:
+    brutto_pit1 = 0
+podatek_pit1 = clean_data(status_data[row2-1][32])
+if podatek_pit1:
+    podatek_pit1 = int(podatek_pit1)
+else:
+    podatek_pit1 = 0
+doplata_pit1 = clean_data(status_data[row2-1][33])
+if doplata_pit1:
+    doplata_pit1 = int(doplata_pit1)
+else:
+    doplata_pit1 = 0
+koscielny_pit1 = clean_data(status_data[row2-1][34])
+if koscielny_pit1:
+    koscielny_pit1 = int(koscielny_pit1)
+else:
+    koscielny_pit1 = 0
+kurzarbeitgeld_pit1 = clean_data(status_data[row2-1][35])
+if kurzarbeitgeld_pit1:
+    kurzarbeitgeld_pit1 = int(kurzarbeitgeld_pit1)
+else:
+    kurzarbeitgeld_pit1 = 0
+
+klasa_pit2 = clean_data(status_data[row2-1][36])
+if klasa_pit2:
+    klasa_pit2 = int(klasa_pit2)
+else:
+    klasa_pit2 = 0
+brutto_pit2 = clean_data(status_data[row2-1][37])
+if brutto_pit2:
+    brutto_pit2 = int(brutto_pit2)
+else:
+    brutto_pit2 = 0
+podatek_pit2 = clean_data(status_data[row2-1][38])
+if podatek_pit2:
+    podatek_pit2 = int(podatek_pit2)
+else:
+    podatek_pit2 = 0
+doplata_pit2 = clean_data(status_data[row2-1][39])
+if doplata_pit2:
+    doplata_pit2 = int(doplata_pit2)
+else:
+    doplata_pit2 = 0
+koscielny_pit2 = clean_data(status_data[row2-1][40])
+if koscielny_pit2:
+    koscielny_pit2 = int(koscielny_pit2)
+else:
+    koscielny_pit2 = 0
+kurzarbeitgeld_pit2 = clean_data(status_data[row2-1][41])
+if kurzarbeitgeld_pit2:
+    kurzarbeitgeld_pit2 = int(kurzarbeitgeld_pit2)
+else:
+    kurzarbeitgeld_pit2 = 0
+
+klasa_pit3 = clean_data(status_data[row2-1][42])
+if klasa_pit3:
+    klasa_pit3 = int(klasa_pit3)
+else:
+    klasa_pit3 = 0
+brutto_pit3 = clean_data(status_data[row2-1][43])
+if brutto_pit3:
+    brutto_pit3 = int(brutto_pit3)
+else:
+    brutto_pit3 = 0
+podatek_pit3 = clean_data(status_data[row2-1][44])
+if podatek_pit3:
+    podatek_pit3 = int(podatek_pit3)
+else:
+    podatek_pit3 = 0
+doplata_pit3 = clean_data(status_data[row2-1][45])
+if doplata_pit3:
+    doplata_pit3 = int(doplata_pit3)
+else:
+    doplata_pit3 = 0
+koscielny_pit3 = clean_data(status_data[row2-1][46])
+if koscielny_pit3:
+    koscielny_pit3 = int(koscielny_pit3)
+else:
+    koscielny_pit3 = 0
+kurzarbeitgeld_pit3 = clean_data(status_data[row2-1][47])
+if kurzarbeitgeld_pit3:
+    kurzarbeitgeld_pit3 = int(kurzarbeitgeld_pit3)
+else:
+    kurzarbeitgeld_pit3 = 0
+
+def wypelnij_imie_nazwisko_st():
+    driver.find_element(By.XPATH, '//*[@id="name"]').send_keys(nazwisko)
+    driver.find_element(By.XPATH, '//*[@id="vorname"]').send_keys(imie)
+    if steuernummer:
+        driver.find_element(By.XPATH, '//*[@id="steuernummer"]').send_keys(steuernummer)
+
 def parse_address(address):
     pattern = re.compile(r'(?P<street>[\w\sąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+?)(?:\s+(?P<block>\d+))?(?:\s*(?P<part>[A-Z]))?(?:/(?P<apartment>\d+))?$')
     match = pattern.match(address.strip())
@@ -106,255 +265,167 @@ def parse_address(address):
     else:
         raise ValueError("Format adresu jest niepoprawny")
 
-#-------------------------------------------------------------------------------------#
-#EST 1A
-if 1==1:
-    #Włączenie strony EST1a
-    PierwszaZgoda()
+
+def przekształć_na_nazwisko_dla_żony(nazwisko_męża):
+    if not nazwisko_męża:
+        return ""
+
+    nazwisko_męża = nazwisko_męża.strip().upper()
+
+    if nazwisko_męża.endswith("SKI"):
+        nazwisko_żony = nazwisko_męża[:-3] + "SKA"
+    elif nazwisko_męża.endswith("CKI"):
+        nazwisko_żony = nazwisko_męża[:-3] + "CKA"
+    elif nazwisko_męża.endswith("DZKI"):
+        nazwisko_żony = nazwisko_męża[:-4] + "DZKA"
+    elif nazwisko_męża.endswith("DZKA"):
+        nazwisko_żony = nazwisko_męża
+    elif nazwisko_męża.endswith("CKI"):
+        nazwisko_żony = nazwisko_męża[:-3] + "CKA"
+    elif nazwisko_męża.endswith("DZKA"):
+        nazwisko_żony = nazwisko_męża[:-4] + "DZKA"
+    elif nazwisko_męża.endswith("EWSKI"):
+        nazwisko_żony = nazwisko_męża[:-5] + "EWSKA"
+    elif nazwisko_męża.endswith("EWICZ"):
+        nazwisko_żony = nazwisko_męża[:-5] + "EWICZ"
+    elif nazwisko_męża.endswith("ICZ"):
+        nazwisko_żony = nazwisko_męża[:-2] + "ÓWNA"
+    elif nazwisko_męża.endswith("Y"):
+        nazwisko_żony = nazwisko_męża[:-1] + "A"
+    else:
+        nazwisko_żony = nazwisko_męża + "OWA"
+
+    return nazwisko_żony.upper()
+def wczytaj_dane_i_wypelnij():
+    pierwsza_zgoda()
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="lip_formcatalog"]/div[2]/div[2]/div[2]/ul/li[2]/div[1]/a/span[1]/span'))).click()
-    time.sleep(3)
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[4]/form/div[4]/div/div/div/div[4]/input'))).click()
-    time.sleep(2)
-
-    #Wypełnianie danych EST1a
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="k1"]'))).click()
-    WypelnijImieNazwiskoST()
-    finanzamt = ws[f'I{row}'].value
-    wait_and_send_keys('//*[@id="finanzamt"]', finanzamt)
-
-    # Podział numeru identyfikacyjnego na części
-    numer = str(ws[f'K{row}'].value)
-    numer.strip(" ")
-    part1 = numer[:2]
-    part2 = numer[2:5]
-    part3 = numer[5:8]
-    part4 = numer[8:]
-
-    # Wypełnianie pól identyfikacyjnych
-    wait_and_send_keys('//*[@id="identifikationssnummer"]', part1)
-    wait_and_send_keys('//*[@id="identifikationssnummer2"]', part2)
-    wait_and_send_keys('//*[@id="identifikationssnummer3"]', part3)
-    wait_and_send_keys('//*[@id="identifikationssnummer4"]', part4)
     time.sleep(2)
-    # Data urodzenia
-    data_urodzenia = ws[f'N{row}'].value
-    if data_urodzenia is not None:
-        data_urodzenia_str = data_urodzenia.strftime('%d%m%Y')
-        wait_and_send_keys('//*[@id="geburtsdatum"]', data_urodzenia_str)
-    pyautogui.press('enter')
-    pyautogui.press('enter')
-    time.sleep(6)
-    #Religia
-    Religia = ws[f'O{row}'].value
-    wait_and_send_keys('//*[@id="religion_barrierearm"]', Religia)
-    pyautogui.press('enter')
 
-    # Ulica i numer
-    adres = ws[f'P{row}'].value
-    if adres is not None:
-        adres = adres.strip()
-        adres = adres.upper()
-        address_components = parse_address(adres)
+# WYPELNIANIE DANYCH MĘŻA 
+    finanzamt = clean_data(data[row-1][8])
+    if finanzamt:
+        wait_and_send_keys('//*[@id="finanzamt"]', finanzamt.split(',')[0])
 
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="strasse_hausnummer"]'))).send_keys(address_components['street'])
-        if address_components['block'] is not None:
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="hausnummer"]'))).send_keys(address_components['block'])
-        if address_components['apartment'] is not None:    
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="hausnummerzusatz"]'))).send_keys(address_components['apartment'])
-        if address_components['part'] is not None:
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="ergaenzung"]'))).send_keys(address_components['part'])
+    if id_nr_meza:
+        wait_and_send_keys('//*[@id="identifikationssnummer"]', id_nr_meza[:2])
+        wait_and_send_keys('//*[@id="identifikationssnummer2"]', id_nr_meza[3:6])
+        wait_and_send_keys('//*[@id="identifikationssnummer3"]', id_nr_meza[7:10])
+        wait_and_send_keys('//*[@id="identifikationssnummer4"]', id_nr_meza[11:])
+    
+    wypelnij_imie_nazwisko_st()
+
+    if data_urodzenia_meza:
+        wait_and_send_keys('//*[@id="geburtsdatum"]', data_urodzenia_meza)
+        pyautogui.press('enter')
+        time.sleep(5)
+    
+    if religia:
+        wait_and_send_keys('//*[@id="religion_barrierearm"]', religia)
+    time.sleep(0.5)
+
+    if ulica:
+        address_components = parse_address(ulica)
+        wait_and_send_keys('//*[@id="strasse_hausnummer"]', address_components['street'])
+        if address_components['block']:
+            wait_and_send_keys('//*[@id="hausnummer"]', address_components['block'])
+        if address_components['apartment']:
+            wait_and_send_keys('//*[@id="hausnummerzusatz"]', address_components['apartment'])
+        if address_components['part']:
+            wait_and_send_keys('//*[@id="ergaenzung"]', address_components['part'])
     else:
         print("Adres jest pusty dla podanej osoby.")
-
-    #data Ślubu i #Czy rozliczani razem
-    DataSlubu = ws[f'R{row}'].value
-    if DataSlubu is not None:
-        DataSlubuS = DataSlubu.strftime('%d%m%Y')
-        wait_and_send_keys('//*[@id="datum"]', DataSlubuS)
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="k9"]'))).click()
-    pyautogui.press('enter')
-    time.sleep(4)
+    
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="staat2"]'))).send_keys("POLEN")
-
-    Miejscowosc=ws[f'Q{row}'].value
-    kod_pocztowy, miejscowosc = Miejscowosc.split(' ', 1)
-    Miejscowosc = Miejscowosc.upper()
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="wohnort"]'))).send_keys(miejscowosc)
+    kod_pocztowy, miasto = miejscowosc.split(' ', 1)
+    miasto = miasto.upper()
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="wohnort"]'))).send_keys(miasto)
     kod_pocztowy = kod_pocztowy.upper()
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="postleitzahl4"]'))).send_keys(kod_pocztowy)
 
-    #Dane żony
-    if DataSlubu is not None:
-        def zamien_ostatnia_litere_na_a(zdanie):
-            if zdanie.strip() == "":
-                return "Zdanie jest puste!"
-
-        Znazwisko = zamien_ostatnia_litere_na_a(nazwisko)
-        zName = driver.find_element("xpath", '//*[@id="abweichender_name"]')
-        zName.send_keys(nazwisko)
-        zVorname=ws[f'T{row}'].value
-        zVorname = zVorname.upper()
-        driver.find_element("xpath", '//*[@id="vorname_ehefrau"]').send_keys(zVorname)
-        
-
-        idNrZony = ws[f'L{row}'].value
-        time.sleep(.2)
-        if idNrZony is not None:
-            # Podział numeru identyfikacyjnego na części
-            znumer = str(ws[f'L{row}'].value)
-            zpart1 = znumer[:2]
-            zpart2 = znumer[2:5]
-            zpart3 = znumer[5:8]
-            zpart4 = znumer[8:]
-
-            # Wypełnianie pól identyfikacyjnych
-            zidentifikationssnummer5 = driver.find_element("xpath", '//*[@id="identifikationssnummer5"]')
-            zidentifikationssnummer5.send_keys(zpart1)
-
-            zidentifikationssnummer6 = driver.find_element("xpath", '//*[@id="identifikationssnummer6"]')
-            zidentifikationssnummer6.send_keys(zpart2)
-
-            zidentifikationssnummer7 = driver.find_element("xpath", '//*[@id="identifikationssnummer7"]')
-            zidentifikationssnummer7.send_keys(zpart3)
-
-            zidentifikationssnummer8 = driver.find_element("xpath", '//*[@id="identifikationssnummer8"]')
-            zidentifikationssnummer8.send_keys(zpart4)
-        #Religia
-        zReligia=driver.find_element("xpath", '//*[@id="religion2_barrierearm"]')
-        zReligia.send_keys(ws[f'O{row}'].value)
-        # Data urodzenia
-        zdata_urodzenia = ws[f'S{row}'].value
-        if zdata_urodzenia is not None:
-            zdata_urodzenia_str = zdata_urodzenia.strftime('%d%m%Y')
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="geburtsdatum2"]'))).send_keys(zdata_urodzenia_str)
+    if data_slubu:
+        wait_and_send_keys('//*[@id="datum"]', data_slubu)
+        driver.find_element(By.XPATH, '//*[@id="k9"]').click()
         pyautogui.press('enter')
-        time.sleep(4)
+        time.sleep(5)
 
-    #2 STRONA
+    if data_slubu:
+        nazwisko_zony = przekształć_na_nazwisko_dla_żony(nazwisko)
+        wait_and_send_keys('//*[@id="abweichender_name"]', nazwisko_zony)
+        wait_and_send_keys('//*[@id="vorname_ehefrau"]', imie_zony)
+
+        driver.find_element(By.XPATH, '//*[@id="geburtsdatum2"]').send_keys(data_urodzenia_zony)
+        pyautogui.press('enter')
+        time.sleep(5)
+
+        if id_nr_zony:
+            wait_and_send_keys('//*[@id="identifikationssnummer5"]', id_nr_zony[:2])
+            wait_and_send_keys('//*[@id="identifikationssnummer6"]', id_nr_zony[3:6])
+            wait_and_send_keys('//*[@id="identifikationssnummer7"]', id_nr_zony[7:10])
+            wait_and_send_keys('//*[@id="identifikationssnummer8"]', id_nr_zony[11:])
+        wait_and_send_keys('//*[@id="religion2_barrierearm"]', religia)
+        pyautogui.press('enter')
+
     Strona2 = driver.find_element("xpath","/html/body/div[4]/form/div[6]/div/div/div[1]/div[2]/div[1]/div/div[10]").click()
     time.sleep(3)
 
-    # Podział numeru konta bankowego
-    numer = str(ws[f'G{row}'].value)
-    part1 = numer[:5]
-    part2 = numer[5:10]
-    part3 = numer[10:15]
-    part4 = numer[15:20]
-    part5 = numer[20:25]
-    part6 = numer[25:30]
-    part7 = numer[30:]
+    numer = clean_data(data[row-1][6])
+    iban_parts = [numer[i:i+5] for i in range(0, len(numer), 5)]
 
-    # Wypełnianie pól identyfikacyjnych
-    iban = driver.find_element("xpath", '//*[@id="iban2"]')
-    iban.send_keys(part1)
+    iban_fields = [
+        '//*[@id="iban2"]', '//*[@id="iban8"]', '//*[@id="iban9"]',
+        '//*[@id="iban10"]', '//*[@id="iban11"]', '//*[@id="iban13"]', '//*[@id="iban14"]'
+    ]
 
-    iban2 = driver.find_element("xpath", '//*[@id="iban8"]')
-    iban2.send_keys(part2)
+    for iban_part, iban_field in zip(iban_parts, iban_fields):
+        wait_and_send_keys(iban_field, iban_part)
 
-    iban3 = driver.find_element("xpath", '//*[@id="iban9"]')
-    iban3.send_keys(part3)
-
-    iban4 = driver.find_element("xpath", '//*[@id="iban10"]')
-    iban4.send_keys(part4)
-
-    iban5 = driver.find_element("xpath", '//*[@id="iban11"]')
-    iban5.send_keys(part5)
-
-    iban6 = driver.find_element("xpath", '//*[@id="iban13"]')
-    iban6.send_keys(part6)
-
-    iban7 = driver.find_element("xpath", '//*[@id="iban14"]')
-    iban7.send_keys(part7)
-
-    swift = ws[f'H{row}'].value
-    if swift is not None:
-        swift = driver.find_element("xpath", '//*[@id="bic"]')
-        swift.send_keys(ws[f'H{row}'].value)
-    time.sleep(.3)
+    if swift:
+        wait_and_send_keys('//*[@id="bic"]', swift)
+    else:
+        print("Swift jest pusty dla podanej osoby.")
+    time.sleep(0.2)
     driver.find_element("xpath", '//*[@id="k10"]').click()
-    time.sleep(.3)
+    time.sleep(0.2)
 
-    #Zmiana formularza na ZP Status De
-    ws = wb['ZP Status DE']
-    row = None
-    for i in range(1, ws.max_row + 1):
-        # Odczytanie danych z komórki A
-        full_name_cell = ws[f'A{i}'].value
-        # Sprawdzenie, czy komórka nie jest pusta
-        if full_name_cell is not None:
-            # Rozdzielenie nazwiska i imienia na podstawie spacji
-            full_name_parts = full_name_cell.split()
-            # Sprawdzenie, czy znaleźliśmy dopasowanie nazwiska i imienia
-            if full_name_parts[0] == nazwisko and full_name_parts[1] == imie:
-                row = i
-                break
-            
-    #KRANKENGELD
-    krankengeld = ws[f'AU{row}'].value
-    if krankengeld is not None:
+
+    if chorobowe:
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="k_hinweis"]'))).click()
         time.sleep(1)
-        wait_and_send_keys('//*[@id="betrag8"]', krankengeld)
+        wait_and_send_keys('//*[@id="betrag8"]', chorobowe)
 
-    #Pobieranie
     PobieranieFormularza()
 
-sonderausgaben1 = ws[f'AE{row}'].value
-sonderausgaben2 = ws[f'Ak{row}'].value
-sonderausgaben3 = ws[f'Aq{row}'].value
-if sonderausgaben1 is not None or sonderausgaben2 is not None or sonderausgaben3 is not None: 
-    if sonderausgaben1 is not None:
-        sonderausgaben1 = round(int(sonderausgaben1))
-    if sonderausgaben1 is None:
-        sonderausgaben1 = 0
-    if sonderausgaben2 is not None:
-        sonderausgaben2 = round(int(sonderausgaben2))
-    if sonderausgaben2 is None:
-        sonderausgaben2 = 0
-    if sonderausgaben3 is not None:
-        sonderausgaben3 = round(int(sonderausgaben3))
-    if sonderausgaben3 is None:
-        sonderausgaben3 = 0
-    KolejnyFormularz()
+if __name__ == "__main__":
+    wczytaj_dane_i_wypelnij()
+
+if koscielny_pit1 or koscielny_pit2 or koscielny_pit3:
+    koscielny_pit1 = round(int(koscielny_pit1)) if koscielny_pit1 else 0
+    koscielny_pit2 = round(int(koscielny_pit2)) if koscielny_pit2 else 0
+    koscielny_pit3 = round(int(koscielny_pit3)) if koscielny_pit3 else 0
+
+    kolejnyFormularz()
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="lip_formcatalog"]/div[2]/div[2]/div[2]/ul/li[5]/div[1]/a'))).click()
-    WypelnijImieNazwiskoST()
-    sonderausgabenCaly = sonderausgaben1+sonderausgaben2+sonderausgaben3
-    wait_and_send_keys('//*[@id="eur"]', sonderausgabenCaly)
+    wypelnij_imie_nazwisko_st()
+    koscielny_Caly = koscielny_pit1 + koscielny_pit2 + koscielny_pit3
+    wait_and_send_keys('//*[@id="eur"]', koscielny_Caly)
     PobieranieFormularza()
-
 #-------------------------------------------------------------------------------------#
 # 017 WA-EST
 if 1==1:
     #Otwieranie strony WA-est
-    KolejnyFormularz()
+    kolejnyFormularz()
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[7]/div[5]/div[2]/div[2]/div[2]/ul/li[9]/div[1]/a'))).click()
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[4]/form/div[7]/div/div[1]/div/div[4]/input'))).click()
     time.sleep(3)
     #Wypełnianie danych WA-est
-    WypelnijImieNazwiskoST()
+    wypelnij_imie_nazwisko_st()
 
-    #Zmiana formularza na ZP Status De
-    ws = wb['ZP Status DE']
-    row = None
-    for i in range(1, ws.max_row + 1):
-        # Odczytanie danych z komórki A
-        full_name_cell = ws[f'A{i}'].value
-        # Sprawdzenie, czy komórka nie jest pusta
-        if full_name_cell is not None:
-            # Rozdzielenie nazwiska i imienia na podstawie spacji
-            full_name_parts = full_name_cell.split()
-            # Sprawdzenie, czy znaleźliśmy dopasowanie nazwiska i imienia
-            if full_name_parts[0] == nazwisko and full_name_parts[1] == imie:
-                row = i
-                break
-
-    ZarobkiMezaNiem = ws[f'U{row}'].value
     if ZarobkiMezaNiem is None:
         ZarobkiMezaNiem = 0
-    ZarobkiZonyNiem = ws[f'V{row}'].value
-    time.sleep(1)
     driver.find_element("xpath", '//*[@id="betrag3"]').send_keys(ZarobkiMezaNiem)
-    time.sleep(1)
+    time.sleep(.5)
     if ZarobkiZonyNiem is not None:
         driver.find_element("xpath", '//*[@id="betrag4"]').send_keys(ZarobkiZonyNiem)
         time.sleep(1)
@@ -373,196 +444,212 @@ if 1==1:
             driver.find_element("xpath", '/html/body/div[4]/form/div[7]/div/div[4]/div/div[1]/div/div/div/div/div[119]/input').click()
     PobieranieFormularza()
 #-------------------------------------------------------------------------------------#
+# 045 KIND 
 def process_sentence(sentence):
-    lines = sentence.split('\n')
     people = []
+    # Podziel tekst według nowej linii
+    lines = sentence.strip().split('\n')
     for line in lines:
-        # Podziel linię według spacji
-        parts = line.split()
-        # Przypisz odpowiednie fragmenty do zmiennych
-        name = parts[0]
-        date = parts[1]
-        status = parts[2] + " " + parts[3]
-        # Dodaj dane osoby do listy
-        people.append((name, date, status))
+        # Usuń białe znaki z początku i końca linii
+        line = line.strip()
+        if line:
+            # Podziel każdą linię według spacji
+            parts = line.split()
+            if len(parts) >= 4:
+                # Przypisz odpowiednie fragmenty do zmiennych
+                name = parts[0]
+                date = parts[1]
+                status = ' '.join(parts[2:])
+                # Dodaj dane osoby do listy
+                people.append((name, date, status))
+            else:
+                print(f"Warning: line '{line}' does not contain enough parts")
     return people, len(people)
+
 def remove_commas(text):
     return text.replace(",", "")
-# 045 KIND 
-kind = ws[f'O{row}'].value
+
+def wypelnij_formularz_dla_dziecka(index, person):
+    kolejnyFormularz()
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="lip_formcatalog"]/div[2]/div[2]/div[2]/ul/li[17]/div[1]/a'))).click()
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[4]/form/div[4]/div/div/div/div[4]/input'))).click()
+    time.sleep(3)
+    wypelnij_imie_nazwisko_st()
+    time.sleep(1)
+    wait_and_send_keys('//*[@id="lfd_nr"]', str(index))
+    if person[2] != 'BEZ KG':
+        wait_and_send_keys('//*[@id="betrag"]', person[2])
+    wait_and_send_keys('//*[@id="vorname2"]', person[0])
+    wait_and_send_keys('//*[@id="fam_kasse"]', 'Sachsen')
+    wait_and_send_keys('//*[@id="datum"]', person[1])
+    pyautogui.press('enter')
+    time.sleep(6)
+    wait_and_send_keys('//*[@id="datum5"]', '0101')
+    pyautogui.press('enter')
+    time.sleep(5)
+    wait_and_send_keys('//*[@id="datum6"]', '3112')
+    pyautogui.press('enter')
+    time.sleep(5)
+    wait_and_send_keys('//*[@id="staat"]', 'POLEN')
+    
+    wait_and_send_keys('//*[@id="k1"]', '1')
+    czyZonaty = clean_data(data[row-1][5])
+    if czyZonaty == "Żonaty":
+        wait_and_send_keys('//*[@id="k2"]', '1')
+    PobieranieFormularza()
+
 if kind is not None:
     kind = remove_commas(kind)
     people_data, number_of_people = process_sentence(kind)
-    KolejnyFormularz()
-    time.sleep(1)
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="lip_formcatalog"]/div[2]/div[2]/div[2]/ul/li[17]/div[1]/a'))).click()
-    time.sleep(2)
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[4]/form/div[4]/div/div/div/div[4]/input'))).click()
-    time.sleep(3)
-    if number_of_people == 1:
-        WypelnijImieNazwiskoST()
-        time.sleep(1)
-        wait_and_send_keys('//*[@id="lfd_nr"]', '1')
-        for person in people_data:
-            if person[2] == 'BEZ KG':
-                pass
-            else:
-                wait_and_send_keys('//*[@id="betrag"]', person[2])
-        wait_and_send_keys('//*[@id="vorname2"]', person[0])
-        wait_and_send_keys('//*[@id="fam_kasse"]', 'Sachsen')
-        wait_and_send_keys('//*[@id="datum"]', person[1])
-        pyautogui.press('enter')
-        time.sleep(6)
-        wait_and_send_keys('//*[@id="datum5"]', '0101')
-        pyautogui.press('enter')
-        time.sleep(5)
-        wait_and_send_keys('//*[@id="datum6"]', '3112')
-        pyautogui.press('enter')
-        time.sleep(5)
-        wait_and_send_keys('//*[@id="staat"]', 'POLEN')
-        ws = wb['ZP Dane kont']
-        for i in range(1, ws.max_row + 1):
-            if ws[f'A{i}'].value == imie and ws[f'B{i}'].value == nazwisko:
-                row = i
-                break
-        wait_and_send_keys('//*[@id="k1"]', '1')
-        czyZonaty = ws[f'F{row}'].value
-        if czyZonaty == "Żonaty":
-            wait_and_send_keys('//*[@id="k2"]', '1')
-    PobieranieFormularza()
-
-
+    print(people_data)
+    print(f"Number of children: {number_of_people}")  # Debugging
+    
+    for i in range(number_of_people):
+        print("number_of_people" + str(i))
+    for i, person in enumerate(people_data):
+        print(f"Filling form for child {i + 1}: {person}")  # Debugging
+        if i >= 5:
+            break
+        wypelnij_formularz_dla_dziecka(i + 1, person)
 
 #-------------------------------------------------------------------------------------#
 # 055 Anlage N
-KolejnyFormularz()
 if 1==1:
-    #Otwieranie strony Anlage N
-    AnlageN= driver.find_element("xpath", '/html/body/div[7]/div[5]/div[2]/div[2]/div[2]/ul/li[21]/div[1]/a').click()
-    time.sleep(3)
+    sum_brutto_1_5 = 0
+    sum_podatek_1_5 = 0
+    sum_doplata_1_5 = 0
+    sum_koscielny_1_5 = 0
+    sum_kurzarbeitgeld_1_5 = 0
 
-    #Zgody
-    Zgoda = driver.find_element("xpath","/html/body/div[4]/form/div[4]/div/div/div/div[4]/input").click()
-    time.sleep(2)
-    SteuerpflichtigePersonA= driver.find_element("xpath","/html/body/div[4]/form/div[7]/div/div[4]/div/div[1]/div/div/div/div/div[1]/input").click()
-    WichtigerHinweis= driver.find_element("xpath","/html/body/div[4]/form/div[7]/div/div[4]/div/div[1]/div/div/div/div/div[4]/input").click()
+    sum_brutto_6 = 0
+    sum_podatek_6 = 0
+    sum_doplata_6 = 0
+    sum_koscielny_6 = 0
+    sum_kurzarbeitgeld_6 = 0
     
-    time.sleep(3)
-    #Wypełnianie danych Osobowych
-    name = driver.find_element("xpath", '//*[@id="name"]')
-    name.send_keys(nazwisko)
 
-    vorname = driver.find_element("xpath", '//*[@id="name2"]')
-    vorname.send_keys(imie)
+    # Sumowanie wartości w ramach tej samej grupy klas
+    if klasa_pit1 in range(1, 6):
+        sum_brutto_1_5 += brutto_pit1
+        sum_podatek_1_5 += podatek_pit1
+        sum_doplata_1_5 += doplata_pit1
+        sum_koscielny_1_5 += koscielny_pit1
+        sum_kurzarbeitgeld_1_5 += kurzarbeitgeld_pit1
+    elif klasa_pit1 == 6:
+        sum_brutto_6 += brutto_pit1
+        sum_podatek_6 += podatek_pit1
+        sum_doplata_6 += doplata_pit1
+        sum_koscielny_6 += koscielny_pit1
+        sum_kurzarbeitgeld_6 += kurzarbeitgeld_pit1
 
-    ws = wb['ZP Dane kont']
-    row = None
-    for i in range(1, ws.max_row + 1):
-        if ws[f'A{i}'].value == imie and ws[f'B{i}'].value == nazwisko:
-            row = i
-            break
-    if row is None:
-        print("Nie znaleziono danych dla podanej osoby.")
-        driver.quit()
-        exit()
-    stnum = ws[f'J{row}'].value
-    if stnum is not None:
-        driver.find_element("xpath",'//*[@id="steuernummer"]').send_keys(stnum)
-    time.sleep(1)
+    if klasa_pit2 in range(1, 6):
+        sum_brutto_1_5 += brutto_pit2
+        sum_podatek_1_5 += podatek_pit2
+        sum_doplata_1_5 += doplata_pit2
+        sum_koscielny_1_5 += koscielny_pit2
+        sum_kurzarbeitgeld_1_5 += kurzarbeitgeld_pit2
+    elif klasa_pit2 == 6:
+        sum_brutto_6 += brutto_pit2
+        sum_podatek_6 += podatek_pit2
+        sum_doplata_6 += doplata_pit2
+        sum_koscielny_6 += koscielny_pit2
+        sum_kurzarbeitgeld_6 += kurzarbeitgeld_pit2
 
-    ws = wb['ZP Status DE']
-    # Szukanie osoby o podanym nazwisku i imieniu w arkuszu "ZP Status De"
-    row = None
-    for i in range(1, ws.max_row + 1):
-        # Odczytanie danych z komórki A
-        full_name_cell = ws[f'A{i}'].value
-        # Sprawdzenie, czy komórka nie jest pusta
-        if full_name_cell is not None:
-            # Rozdzielenie nazwiska i imienia na podstawie spacji
-            full_name_parts = full_name_cell.split()
-            # Sprawdzenie, czy znaleźliśmy dopasowanie nazwiska i imienia
-            if full_name_parts[0] == nazwisko and full_name_parts[1] == imie:
-                row = i
-                break
+    if klasa_pit3 in range(1, 6):
+        sum_brutto_1_5 += brutto_pit3
+        sum_podatek_1_5 += podatek_pit3
+        sum_doplata_1_5 += doplata_pit3
+        sum_koscielny_1_5 += koscielny_pit3
+        sum_kurzarbeitgeld_1_5 += kurzarbeitgeld_pit3
+    elif klasa_pit3 == 6:
+        sum_brutto_6 += brutto_pit3
+        sum_podatek_6 += podatek_pit3
+        sum_doplata_6 += doplata_pit3
+        sum_koscielny_6 += koscielny_pit3
+        sum_kurzarbeitgeld_6 += kurzarbeitgeld_pit3
 
-    pit1 = ws[f'AA{row}'].value
-    if pit1 is not None:
-        ws= wb['ZP Status DE']
+    print("Sumy wartości dla klas 1-5:")
+    print(f"Suma brutto: {sum_brutto_1_5}")
+    print(f"Suma podatek: {sum_podatek_1_5}")
+    print(f"Suma dopłata: {sum_doplata_1_5}")
+    print(f"Suma kościelny: {sum_koscielny_1_5}")
+    print(f"Suma kurzarbeitgeld: {sum_kurzarbeitgeld_1_5}")
 
-        #Wypełnianie danych aNLAGE n
-        #--Tutaj będą zarobki w niemczech
-        klasa = ws[f'AA{row}'].value
-        klasa = int(klasa)
-        brutto1 = ws[f'AB{row}'].value
-        if brutto1 is not None:
-            brutto1 = round(int(ws[f'AB{row}'].value))
-        podatek1 = ws[f'AC{row}'].value
-        if podatek1 is not None:
-            podatek1 = round(int(ws[f'AC{row}'].value))
-        doplata1 = ws[f'AD{row}'].value
-        if doplata1 is not None:                   
-            doplata1 = round(int(ws[f'AD{row}'].value))
-        koscielny1 = ws[f'AE{row}'].value
-        if koscielny1 is not None:
-            koscielny1 = round(int(ws[f'AE{row}'].value))
-        kurzarbeitgeld1 = ws[f'AF{row}'].value
-        if kurzarbeitgeld1 is not None:
-            kurzarbeitgeld1 = round(int(ws[f'AF{row}'].value))
+    print("Sumy wartości dla klasy 6:")
+    print(f"Suma brutto: {sum_brutto_6}")
+    print(f"Suma podatek: {sum_podatek_6}")
+    print(f"Suma dopłata: {sum_doplata_6}")
+    print(f"Suma kościelny: {sum_koscielny_6}")
+    print(f"Suma kurzarbeitgeld: {sum_kurzarbeitgeld_6}")
 
-        if klasa < 6:
-            driver.find_element("xpath",'//*[@id="steuerklasse"]').send_keys(klasa)
-            pyautogui.press('enter')
-            if brutto1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag"]').send_keys(brutto1)
-            if podatek1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag2"]').send_keys(podatek1)
-            if doplata1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag3"]').send_keys(doplata1)
-            if koscielny1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag4"]').send_keys(koscielny1)
-        else:
-            if brutto1 is not None:    
-                driver.find_element("xpath",'//*[@id="betrag6"]').send_keys(brutto1)
-            if podatek1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag7"]').send_keys(podatek1)
-            if doplata1 is not None:    
-                driver.find_element("xpath",'//*[@id="betrag8"]').send_keys(doplata1)
-            if koscielny1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag9"]').send_keys(koscielny1)
+    if klasa_pit1 is not None:
+        kolejnyFormularz()
+        # Otwieranie strony Anlage N
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[7]/div[5]/div[2]/div[2]/div[2]/ul/li[21]/div[1]/a'))).click()
+        time.sleep(5)
+        # Zgody
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[4]/form/div[4]/div/div/div/div[4]/input'))).click()
+        time.sleep(5)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[4]/form/div[7]/div/div[4]/div/div[1]/div/div/div/div/div[1]/input'))).click()
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[4]/form/div[7]/div/div[4]/div/div[1]/div/div/div/div/div[4]/input'))).click()
+        time.sleep(5)
 
-        if kurzarbeitgeld1 is not None:
-            driver.find_element("xpath",'//*[@id="betrag30"]').send_keys(kurzarbeitgeld1)
-
-        #Przejście na stronę 3
-        Strona3= driver.find_element("xpath","/html/body/div[4]/form/div[6]/div/div/div[1]/div[2]/div[1]/div/div[11]").click()
-        time.sleep(4)
-
-        BERUFSKLEIDUNg= driver.find_element("xpath","/html/body/div[4]/form/div[7]/div/div[4]/div/div[1]/div/div/div/div/input[19]")
-        BERUFSKLEIDUNg.send_keys('BERUFSKLEIDUNG')
-        BERUFSKLEIDUNg110= driver.find_element("xpath","/html/body/div[4]/form/div[7]/div/div[4]/div/div[1]/div/div/div/div/input[20]")
-        BERUFSKLEIDUNg110.send_keys('110')
-        Berechnen= driver.find_element("xpath","/html/body/div[4]/form/div[7]/div/div[4]/div/div[1]/div/div/div/div/input[22]").click()
+        # Wypełnianie danych osobowych
+        driver.find_element("xpath", '//*[@id="name"]').send_keys(nazwisko)
+        driver.find_element("xpath", '//*[@id="name2"]').send_keys(imie)
+        if steuernummer is not None:
+            driver.find_element("xpath", '//*[@id="steuernummer"]').send_keys(steuernummer)
         time.sleep(1)
 
+        # Wypełnianie danych ANLAGE N
+        if klasa_pit1 in range(1, 6) or klasa_pit2 in range(1, 6) or klasa_pit3 in range(1, 6):
+            values = [x for x in [klasa_pit1, klasa_pit2, klasa_pit3] if x > 0]
+            if values:
+                min_value = min(values)
+            driver.find_element("xpath", '//*[@id="steuerklasse"]').send_keys(min_value)
+            pyautogui.press('enter')
+            if sum_brutto_1_5 is not None:
+                driver.find_element("xpath", '//*[@id="betrag"]').send_keys(sum_brutto_1_5)
+            if sum_podatek_1_5 is not None:
+                driver.find_element("xpath", '//*[@id="betrag2"]').send_keys(sum_podatek_1_5)
+            if sum_doplata_1_5 is not None:
+                driver.find_element("xpath", '//*[@id="betrag3"]').send_keys(sum_doplata_1_5)
+            if sum_koscielny_1_5 is not None:
+                driver.find_element("xpath", '//*[@id="betrag4"]').send_keys(sum_koscielny_1_5)
+        if klasa_pit1 == 6 or klasa_pit2 == 6 or klasa_pit3 == 6:
+            if sum_brutto_6 is not None:
+                driver.find_element("xpath", '//*[@id="betrag6"]').send_keys(sum_brutto_6)
+            if sum_podatek_6 is not None:
+                driver.find_element("xpath", '//*[@id="betrag7"]').send_keys(sum_podatek_6)
+            if sum_doplata_6 is not None:
+                driver.find_element("xpath", '//*[@id="betrag8"]').send_keys(sum_doplata_6)
+            if sum_koscielny_6 is not None:
+                driver.find_element("xpath", '//*[@id="betrag9"]').send_keys(sum_koscielny_6)
+
+        if sum_kurzarbeitgeld_1_5 is not None or sum_kurzarbeitgeld_6 is not None:
+            sum_kurzarbeitgeld = sum_kurzarbeitgeld_6 + sum_kurzarbeitgeld_1_5
+            driver.find_element("xpath", '//*[@id="betrag30"]').send_keys(sum_kurzarbeitgeld)
+        
+        #Przejście na stronę 3
+        time.sleep(2)
+        WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[4]/form/div[6]/div/div/div[1]/div[2]/div[1]/div/div[11]/input'))).click()
+
+        time.sleep(4)
+        wait_and_send_keys('//*[@id="anwendungen3"]','BERUFSKLEIDUNG')
+        wait_and_send_keys('//*[@id="betrag39"]','110')
+
+        time.sleep(.5)
         #Przejście na stronę 4
-        Strona3 = driver.find_element("xpath","/html/body/div[4]/form/div[6]/div/div/div[1]/div[2]/div[1]/div/div[12]").click()
+        driver.find_element("xpath",'/html/body/div[4]/form/div[6]/div/div/div[1]/div[2]/div[1]/div/div[12]/input').click()
         time.sleep(3)
 
-        fahrtkosten = ws[f'I{row}'].value
-        ubernachtungskosten = ws[f'J{row}'].value
-        h24 = ws[f'K{row}'].value
-        h8 = ws[f'L{row}'].value
-        wKabinie = ws[f'M{row}'].value
-        anUndAbrei = ws[f'N{row}'].value
-        pracodawca = ws[f'AT{row}'].value
-
-        if fahrtkosten is not None:
+        if fahrkosten is not None:
             driver.find_element("xpath",'//*[@id="fahrkosten"]').send_keys('Fahrtkosten')
-            driver.find_element("xpath",'//*[@id="betrag45"]').send_keys(fahrtkosten)
+            driver.find_element("xpath",'//*[@id="betrag45"]').send_keys(fahrkosten)
 
-        if ubernachtungskosten is not None:
+        if ubernachtung is not None:
             driver.find_element("xpath",'//*[@id="uebernachtungskosten"]').send_keys('Ubernachtungskosten')
-            driver.find_element("xpath",'//*[@id="betrag71"]').send_keys(ubernachtungskosten)
+            driver.find_element("xpath",'//*[@id="betrag71"]').send_keys(ubernachtung)
 
         if h24 is not None:
             driver.find_element("xpath",'//*[@id="zahl_der_tage3"]').send_keys(h24)
@@ -570,259 +657,37 @@ if 1==1:
         if h8 is not None:
             driver.find_element("xpath",'//*[@id="zahl_der_tage"]').send_keys(h8)
 
-        if wKabinie is not None:
-            driver.find_element("xpath",'//*[@id="zahl_der_tage4"]').send_keys(wKabinie)
+        if w_kabinie is not None:
+            driver.find_element("xpath",'//*[@id="zahl_der_tage4"]').send_keys(w_kabinie)
 
-        if anUndAbrei is not None:
-            driver.find_element("xpath",'//*[@id="zahl_der_tage2"]').send_keys(anUndAbrei)
+        if an_und_ab is not None:
+            driver.find_element("xpath",'//*[@id="zahl_der_tage2"]').send_keys(an_und_ab)
         if pracodawca is not None:
             driver.find_element("xpath",'//*[@id="betrag47"]').send_keys(pracodawca)
         time.sleep(1)
 
         #Pobieranie
         PobieranieFormularza()
-    pit2 = ws[f'AG{row}'].value
-    if pit2 is not None:
-
-        KolejnyFormularz()
-
-        #Otwieranie strony Anlage N
-        AnlageN= driver.find_element("xpath", '/html/body/div[7]/div[5]/div[2]/div[2]/div[2]/ul/li[21]/div[1]/a').click()
-        time.sleep(3)
-
-        #Zgody
-        Zgoda = driver.find_element("xpath","/html/body/div[4]/form/div[4]/div/div/div/div[4]/input").click()
-        time.sleep(2)
-        SteuerpflichtigePersonA= driver.find_element("xpath","/html/body/div[4]/form/div[7]/div/div[4]/div/div[1]/div/div/div/div/div[1]/input").click()
-        WichtigerHinweis= driver.find_element("xpath","/html/body/div[4]/form/div[7]/div/div[4]/div/div[1]/div/div/div/div/div[4]/input").click()
-        time.sleep(2)
-
-        time.sleep(3)
-        #Wypełnianie danych Osobowych
-        name = driver.find_element("xpath", '//*[@id="name"]')
-        name.send_keys(nazwisko)
-
-        vorname = driver.find_element("xpath", '//*[@id="name2"]')
-        vorname.send_keys(imie)
-
-        ws = wb['ZP Dane kont']
-        row = None
-        for i in range(1, ws.max_row + 1):
-            if ws[f'A{i}'].value == imie and ws[f'B{i}'].value == nazwisko:
-                row = i
-                break
-        if row is None:
-            print("Nie znaleziono danych dla podanej osoby.")
-            driver.quit()
-            exit()
-        stnum = ws[f'J{row}'].value
-        if stnum is not None:
-            driver.find_element("xpath",'//*[@id="steuernummer"]').send_keys(stnum)
-        time.sleep(1)
-        ws = wb['ZP Status DE']
-        # Szukanie osoby o podanym nazwisku i imieniu w arkuszu "ZP Status De"
-        row = None
-        for i in range(1, ws.max_row + 1):
-            # Odczytanie danych z komórki A
-            full_name_cell = ws[f'A{i}'].value
-            # Sprawdzenie, czy komórka nie jest pusta
-            if full_name_cell is not None:
-                # Rozdzielenie nazwiska i imienia na podstawie spacji
-                full_name_parts = full_name_cell.split()
-                # Sprawdzenie, czy znaleźliśmy dopasowanie nazwiska i imienia
-                if full_name_parts[0] == nazwisko and full_name_parts[1] == imie:
-                    row = i
-                    break
-
-        #Wypełnianie danych aNLAGE n
-        #--Tutaj będą zarobki w niemczech
-        klasa = ws[f'AG{row}'].value
-        brutto1 = ws[f'Ah{row}'].value
-        if brutto1 is not None:
-            brutto1 = round(int(ws[f'Ah{row}'].value))
-        podatek1 = ws[f'Ai{row}'].value
-        if podatek1 is not None:
-            podatek1 = round(int(ws[f'Ai{row}'].value))
-        doplata1 = ws[f'Aj{row}'].value
-        if doplata1 is not None:                   
-            doplata1 = round(int(ws[f'Aj{row}'].value))
-        koscielny1 = ws[f'Ak{row}'].value
-        if koscielny1 is not None:
-            koscielny1 = round(int(ws[f'Ak{row}'].value))
-        kurzarbeitgeld1 = ws[f'Al{row}'].value
-        if kurzarbeitgeld1 is not None:
-            kurzarbeitgeld1 = round(int(ws[f'Al{row}'].value))
-
-        if klasa < 6:
-            driver.find_element("xpath",'//*[@id="steuerklasse"]').send_keys(klasa)
-            pyautogui.press('enter')
-            if brutto1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag"]').send_keys(brutto1)
-            if podatek1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag2"]').send_keys(podatek1)
-            if doplata1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag3"]').send_keys(doplata1)
-            if koscielny1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag4"]').send_keys(koscielny1)
-        else:
-            if brutto1 is not None:    
-                driver.find_element("xpath",'//*[@id="betrag6"]').send_keys(brutto1)
-            if podatek1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag7"]').send_keys(podatek1)
-            if doplata1 is not None:    
-                driver.find_element("xpath",'//*[@id="betrag8"]').send_keys(doplata1)
-            if koscielny1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag9"]').send_keys(koscielny1)
-
-        if kurzarbeitgeld1 is not None:
-            driver.find_element("xpath",'//*[@id="betrag30"]').send_keys(kurzarbeitgeld1)
-        #Pobieranie
-        PobieranieFormularza()
-    pit3 = ws[f'AM{row}'].value
-    if pit3 is not None:
-        KolejnyFormularz()
-
-        #Otwieranie strony Anlage N
-        AnlageN= driver.find_element("xpath", '/html/body/div[7]/div[5]/div[2]/div[2]/div[2]/ul/li[21]/div[1]/a').click()
-        time.sleep(3)
-
-        #Zgody
-        Zgoda = driver.find_element("xpath","/html/body/div[4]/form/div[4]/div/div/div/div[4]/input").click()
-        time.sleep(2)
-        SteuerpflichtigePersonA= driver.find_element("xpath","/html/body/div[4]/form/div[7]/div/div[4]/div/div[1]/div/div/div/div/div[1]/input").click()
-        WichtigerHinweis= driver.find_element("xpath","/html/body/div[4]/form/div[7]/div/div[4]/div/div[1]/div/div/div/div/div[4]/input").click()
-        time.sleep(2)
-
-        time.sleep(3)
-        #Wypełnianie danych Osobowych
-        name = driver.find_element("xpath", '//*[@id="name"]')
-        name.send_keys(nazwisko)
-
-        vorname = driver.find_element("xpath", '//*[@id="name2"]')
-        vorname.send_keys(imie)
-
-        ws = wb['ZP Dane kont']
-        row = None
-        for i in range(1, ws.max_row + 1):
-            if ws[f'A{i}'].value == imie and ws[f'B{i}'].value == nazwisko:
-                row = i
-                break
-        if row is None:
-            print("Nie znaleziono danych dla podanej osoby.")
-            driver.quit()
-            exit()
-        stnum = ws[f'J{row}'].value
-        if stnum is not None:
-            driver.find_element("xpath",'//*[@id="steuernummer"]').send_keys(stnum)
-        time.sleep(1)
-        ws= wb['ZP Status DE']
-
-        # Szukanie osoby o podanym nazwisku i imieniu w arkuszu "ZP Status De"
-        row = None
-        for i in range(1, ws.max_row + 1):
-            # Odczytanie danych z komórki A
-            full_name_cell = ws[f'A{i}'].value
-            # Sprawdzenie, czy komórka nie jest pusta
-            if full_name_cell is not None:
-                # Rozdzielenie nazwiska i imienia na podstawie spacji
-                full_name_parts = full_name_cell.split()
-                # Sprawdzenie, czy znaleźliśmy dopasowanie nazwiska i imienia
-                if full_name_parts[0] == nazwisko and full_name_parts[1] == imie:
-                    row = i
-                    break
-
-        #Wypełnianie danych aNLAGE n
-        #--Tutaj będą zarobki w niemczech
-        klasa = ws[f'AM{row}'].value
-        brutto1 = ws[f'An{row}'].value
-        if brutto1 is not None:
-            brutto1 = round(int(ws[f'An{row}'].value))
-        podatek1 = ws[f'Ao{row}'].value
-        if podatek1 is not None:
-            podatek1 = round(int(ws[f'Ao{row}'].value))
-        doplata1 = ws[f'Ap{row}'].value
-        if doplata1 is not None:                   
-            doplata1 = round(int(ws[f'Ap{row}'].value))
-        koscielny1 = ws[f'Aq{row}'].value
-        if koscielny1 is not None:
-            koscielny1 = round(int(ws[f'Aq{row}'].value))
-        kurzarbeitgeld1 = ws[f'Ar{row}'].value
-        if kurzarbeitgeld1 is not None:
-            kurzarbeitgeld1 = round(int(ws[f'Ar{row}'].value))
-
-        if klasa < 6:
-            driver.find_element("xpath",'//*[@id="steuerklasse"]').send_keys(klasa)
-            pyautogui.press('enter')
-            if brutto1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag"]').send_keys(brutto1)
-            if podatek1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag2"]').send_keys(podatek1)
-            if doplata1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag3"]').send_keys(doplata1)
-            if koscielny1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag4"]').send_keys(koscielny1)
-        else:
-            if brutto1 is not None:    
-                driver.find_element("xpath",'//*[@id="betrag6"]').send_keys(brutto1)
-            if podatek1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag7"]').send_keys(podatek1)
-            if doplata1 is not None:    
-                driver.find_element("xpath",'//*[@id="betrag8"]').send_keys(doplata1)
-            if koscielny1 is not None:
-                driver.find_element("xpath",'//*[@id="betrag9"]').send_keys(koscielny1)
-
-        if kurzarbeitgeld1 is not None:
-            driver.find_element("xpath",'//*[@id="betrag30"]').send_keys(kurzarbeitgeld1)
-        #Pobieranie
-        PobieranieFormularza()
 
 #-------------------------------------------------------------------------------------#
 #Vorsorgeaufwendungen
-KolejnyFormularz()
+kolejnyFormularz()
 #Otwieranie strony Vorsorgeaufwendungen
 vorsorgeaufwendungen= driver.find_element("xpath", '//*[@id="lip_formcatalog"]/div[2]/div[2]/div[2]/ul/li[35]/div[1]/a').click()
 time.sleep(3)
 
 #Zgoda nr1
 driver.find_element("xpath",'/html/body/div[4]/form/div[4]/div/div/div/div[4]/input').click()
-time.sleep(.5)
-ws = wb['ZP Dane kont']
-row = None
-for i in range(1, ws.max_row + 1):
-    if ws[f'A{i}'].value == imie and ws[f'B{i}'].value == nazwisko:
-        row = i
-        break
-if row is None:
-    print("Nie znaleziono danych dla podanej osoby.")
-    driver.quit()
-    exit()
-time.sleep(3)        
-WypelnijImieNazwiskoST()
 time.sleep(2)
+wypelnij_imie_nazwisko_st()
 #Zgoda nr2
 driver.find_element("xpath",'//*[@id="k_hinweis"]').click()
 time.sleep(3)
 
-ws= wb['ZP Status DE']
-# Szukanie osoby o podanym nazwisku i imieniu w arkuszu "ZP Status De"
-row = None
-for i in range(1, ws.max_row + 1):
-    full_name_cell = ws[f'A{i}'].value
-    if full_name_cell is not None:
-        full_name_parts = full_name_cell.split()
-        if full_name_parts[0] == nazwisko and full_name_parts[1] == imie:
-            row = i
-            break
-
-nr22 = ws[f'W{row}'].value
-nr23 = ws[f'X{row}'].value
-nr25 = ws[f'Y{row}'].value
-nr26 = ws[f'Z{row}'].value
 driver.find_element("xpath",'//*[@id="betrag"]').send_keys(nr23)
 driver.find_element("xpath",'//*[@id="betrag5"]').send_keys(nr22)
 driver.find_element("xpath",'//*[@id="betrag15"]').send_keys(nr25)
 driver.find_element("xpath",'//*[@id="betrag18"]').send_keys(nr26)
-nr27 = ws[f'AS{row}'].value
 if nr27 is not None:
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="lip_buttonPanel"]/div[1]/div/div[11]'))).click()
     wait_and_send_keys('//*[@id="betrag71"]', nr27)
@@ -830,7 +695,7 @@ time.sleep(.5)
 
 #Pobieranie
 PobieranieFormularza()
-
+time.sleep(100)
 import time
 from selenium import webdriver
 import pyautogui
