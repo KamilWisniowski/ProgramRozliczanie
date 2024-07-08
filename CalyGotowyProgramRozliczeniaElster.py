@@ -474,7 +474,7 @@ if (koscielny_pit1 or koscielny_pit2 or koscielny_pit3) and czy_ogr_ob_podatkowy
     PobieranieFormularza()
 #-------------------------------------------------------------------------------------#
 # 017 WA-EST
-if czy_konto_elster == "TAK":
+if czy_ogr_ob_podatkowy == "NIE":
     #Otwieranie strony WA-est
     kolejnyFormularz()
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '/html/body/div[7]/div[5]/div[2]/div[2]/div[2]/ul/li[9]/div[1]/a'))).click()
@@ -757,7 +757,7 @@ driver.maximize_window()
 
 # Wybór metody logowania
 driver.find_element(By.XPATH, '//*[@id="submitButton_loginBox.file_cert"]').click()
-time.sleep(.5)
+time.sleep(2)
 pyautogui.click(x=115, y=488)
 pyautogui.click(x=412, y=195)
 pyautogui.press('enter')
@@ -826,18 +826,22 @@ except TimeoutException:
 
 #chyba do usunięcia
 time.sleep(.5)
-pyautogui.click(x=1906,y=518)
-time.sleep(1)
-pyautogui.click(x=315,y=333)
-time.sleep(1)
+pyautogui.click(x=1912, y=543)
+time.sleep(.5)
+pyautogui.click(x=302, y=266)
+
 try:
     WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="fillInProfile_Startseite-MeinProfil"]'))).click()
 except:
     pass
 time.sleep(1)
-checkbox_Einkommensteuererklärung = driver.find_element(By.XPATH, '//*[@id="Startseite(0)_fields(eruESt1AArt_ErklE0100001)"]')
+if czy_ogr_ob_podatkowy == "NIE":
+    checkbox_Einkommensteuererklärung = driver.find_element(By.XPATH, '//*[@id="Startseite(0)_fields(eruESt1AArt_ErklE0100001)"]')
+else:
+    checkbox_Einkommensteuererklärung = driver.find_element(By.XPATH, '//*[@id="Startseite(0)_fields(eruESt1CArt_ErklE7100101)"]')
 if not checkbox_Einkommensteuererklärung.is_selected():
     checkbox_Einkommensteuererklärung.click()
+    pyautogui.press('enter')
 
 #WYEPŁACZANIE DANYCH dla EST1A
 if czy_ogr_ob_podatkowy=="NIE":
@@ -881,10 +885,80 @@ if czy_ogr_ob_podatkowy=="NIE":
     pyautogui.press('enter')
     time.sleep(2)
 elif czy_ogr_ob_podatkowy=="TAK":
-    daneURL = 'https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VHauptvordruck'
+    daneURL = 'https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VHauptvordruck/StpflPerson'
+    driver.get(daneURL)
+    time.sleep(1)
+    WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7100401)"]'))).clear()
+    wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7100401)"]', id_nr_meza)
+    WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7100601)"]'))).clear()
+    wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7100601)"]', nazwisko)
+    WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7100701)"]'))).clear()
+    wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7100701)"]', imie)
+    WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7100602)"]'))).clear()
+    wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7100602)"]', data_urodzenia_meza)
+    if ulica:
+        address_components = parse_address(ulica)
+        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7100904)"]'))).clear()
+        wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7100904)"]', address_components['street'])
+        if address_components['block']:
+            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7101003)"]'))).clear()
+            wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7101003)"]', address_components['block'])
+        if address_components['apartment']:
+            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7101004)"]'))).clear()
+            wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7101004)"]', address_components['apartment'])
+        if address_components['part']:
+            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7101005)"]'))).clear()
+            wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7101005)"]', address_components['part'])
+    else:
+        print("Adres jest pusty dla podanej osoby.")
+    kod_pocztowy, miasto = miejscowosc.split(' ', 1)
+    miasto = miasto.upper()   
+    kod_pocztowy = kod_pocztowy.upper()
+    WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7100902)"]'))).clear()
+    wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7100902)"]', kod_pocztowy)
+    WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7100903)"]'))).clear()
+    wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7100903)"]', miasto)
+    WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7101001)"]'))).clear()
+    aktualny_stan_zamieszkania=aktualny_stan_zamieszkania.capitalize()
+    wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7101001)"]', aktualny_stan_zamieszkania)
+    if miejsce_urodzenia:
+        wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7101201)"]', miejsce_urodzenia)
+    else:
+        wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7101201)"]', "-")
 
+    kraj_urodzenia=kraj_urodzenia.capitalize()
+    wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_fields(eruESt1CAllgStPflE7101903)"]', kraj_urodzenia)
+    wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_StpflPerson(0)_Staatsangehoerigkeit(0)_fields(eruESt1CAllgStPflStaatsangE7101101)"]', narodowosc)
+    WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/VHauptvordruck[0]/StpflPerson[0]/Staatsangehoerigkeit[0]"]'))).click()
+    WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="NextPage"]'))).click()
+    stronaKontaBankowegoURL='https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VHauptvordruck/Bankverbindung'
+    driver.get(stronaKontaBankowegoURL)
+    time.sleep(2)
+    WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VHauptvordruck(0)_Bankverbindung(0)_fields(eruESt1CAllgBVE7102103)"]'))).clear()
+    wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_Bankverbindung(0)_fields(eruESt1CAllgBVE7102103)"]', numer_konta_bankowego)
+    WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VHauptvordruck(0)_Bankverbindung(0)_fields(eruESt1CAllgBVE7101601)"]'))).clear()
+    wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_Bankverbindung(0)_fields(eruESt1CAllgBVE7101601)"]', swift)
+    pyautogui.press('enter')
+    stronaZarobkiWPolsceURL='https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VHauptvordruck/Veranlagung'
+    driver.get(stronaZarobkiWPolsceURL)
+    time.sleep(2)
+    checkbox1 = driver.find_element(By.XPATH, '//*[@id="Startseite(0)_VHauptvordruck(0)_Veranlagung(0)_fields(eruESt1CVlg_P_50_Abs_2E7104101)"]')
+    if not checkbox1.is_selected():
+        # Zaznaczamy checkbox
+        checkbox1.click()
+    checkbox2 = driver.find_element(By.XPATH, '//*[@id="Startseite(0)_VHauptvordruck(0)_Veranlagung(0)_fields(eruESt1CVlg_P_50_Abs_2Ek_nichts_Arb_St_AbzE7103301)"]')
+    if not checkbox2.is_selected():
+        # Zaznaczamy checkbox
+        checkbox2.click()
+    wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_Veranlagung(0)_fields(eruESt1CVlg_P_50_Abs_2ProgVBE7103601)"]', ZarobkiMezaNiem)
+    pyautogui.press('enter')
+    stronaNieOgrObPodURL='https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VHauptvordruck/AngabenBeschrSteuerpflicht'
+    driver.get(stronaNieOgrObPodURL)
+    time.sleep(2)
+    wait_and_send_keys('//*[@id="Startseite(0)_VHauptvordruck(0)_AngabenBeschrSteuerpflicht(0)_fields(eruESt1CErw_besch_StpflE7106603)"]', 'Nein')
+    WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="NextPage"]'))).click()
 
-if chorobowe:
+if chorobowe and czy_ogr_ob_podatkowy=="NIE":
     time.sleep(1)
     choroboweURL = 'https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/VHauptvordruck/Einkommensersatzleistungen'
     driver.get(choroboweURL)
@@ -896,7 +970,7 @@ if chorobowe:
 
 #-------------------------------------------------------------------------------------#
 # 045 KIND 
-if kind is not None:
+if kind is not None and czy_ogr_ob_podatkowy=="NIE":
     kindURL= 'https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageKind'
     driver.get(kindURL)
     time.sleep(1)
@@ -972,8 +1046,11 @@ if kind is not None:
 # 055 Anlage N
 # Wprowadzenie danych
 # Przejście do sekcji Anlage N
+if czy_ogr_ob_podatkowy=="NIE":
+    AnlageN = 'https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/AngabenZumArbeitslohn'
+else:
+    AnlageN = 'https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VAnlageN/AngabenZumArbeitslohn'
 
-AnlageN = 'https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/AngabenZumArbeitslohn'
 driver.get(AnlageN)
 
 
@@ -1029,10 +1106,9 @@ elif klasa_pit3 == 6:
     sum_koscielny_6 += koscielny_pit3
     sum_kurzarbeitgeld_6 += kurzarbeitgeld_pit3
 
-if klasa_pit1 is not None:
+if klasa_pit1 is not None and czy_ogr_ob_podatkowy == "NIE":
     time.sleep(1)
-    AnlageNURL = 'https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/AngabenZumArbeitslohn'
-    driver.get(AnlageNURL)
+    driver.get(AnlageN)
     time.sleep(3)
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="edit_btn_Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)"]'))).click()
     time.sleep(3)
@@ -1044,153 +1120,281 @@ if klasa_pit1 in range(1, 6) or klasa_pit2 in range(1, 6) or klasa_pit3 in range
     if values:
         min_value = min(values)
     klasa_pit1=str(klasa_pit1)
-    driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_fields(eruNArbLLStB_1_5_SumE0200002)"]').send_keys(klasa_pit1)
-    
+    if czy_ogr_ob_podatkowy=="NIE":
+        driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_fields(eruNArbLLStB_1_5_SumE0200002)"]').send_keys(klasa_pit1)
+        pyautogui.press('enter')
+
+    else:  
+        driver.find_element("xpath", '//*[@id="Startseite(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_fields(eruNArbLLStB_1_5_SumE0200002)"]').send_keys(klasa_pit1)
+        pyautogui.press('enter')
+        time.sleep(3)
+
     if sum_brutto_1_5 is not None:
-        driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlassenEinsBisFuenf(0)_fields(eruNArbLLStB_1_5_EinzE0200204)"]').send_keys(sum_brutto_1_5)
+        if czy_ogr_ob_podatkowy=="NIE":
+            driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlassenEinsBisFuenf(0)_fields(eruNArbLLStB_1_5_EinzE0200204)"]').send_keys(sum_brutto_1_5)
+        else:  
+            driver.find_element("xpath", '//*[@id="Startseite(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlassenEinsBisFuenf(0)_fields(eruNArbLLStB_1_5_EinzE0200204)"]').send_keys(sum_brutto_1_5)
+
     if sum_podatek_1_5 is not None:
-        driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlassenEinsBisFuenf(0)_fields(eruNArbLLStB_1_5_EinzE0200304)"]').send_keys(sum_podatek_1_5)
+        if czy_ogr_ob_podatkowy=="NIE":
+            driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlassenEinsBisFuenf(0)_fields(eruNArbLLStB_1_5_EinzE0200304)"]').send_keys(sum_podatek_1_5)
+        else:
+            driver.find_element("xpath", '//*[@id="Startseite(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlassenEinsBisFuenf(0)_fields(eruNArbLLStB_1_5_EinzE0200304)"]').send_keys(sum_podatek_1_5)
+
     if sum_doplata_1_5 is not None:
-        driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlassenEinsBisFuenf(0)_fields(eruNArbLLStB_1_5_EinzE0200404)"]').send_keys(sum_doplata_1_5)
-    if sum_koscielny_1_5 is not None:
-        driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlassenEinsBisFuenf(0)_fields(eruNArbLLStB_1_5_EinzE0200504)"]').send_keys(sum_koscielny_1_5)
-    elif sum_koscielny_1_5==0:
-        pass
+        if czy_ogr_ob_podatkowy=="NIE":
+            driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlassenEinsBisFuenf(0)_fields(eruNArbLLStB_1_5_EinzE0200404)"]').send_keys(sum_doplata_1_5)
+        else:
+            driver.find_element("xpath", '//*[@id="Startseite(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlassenEinsBisFuenf(0)_fields(eruNArbLLStB_1_5_EinzE0200404)"]').send_keys(sum_doplata_1_5)
+
+    if sum_koscielny_1_5 > 0:
+        if czy_ogr_ob_podatkowy=="NIE":
+            driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlassenEinsBisFuenf(0)_fields(eruNArbLLStB_1_5_EinzE0200504)"]').send_keys(sum_koscielny_1_5)
+
     time.sleep(.5)
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/MAVSAnlageN[0]/VAnlageN[0]/AngabenZumArbeitslohn[0]/LStBKlassenEinsBisFuenf[0]"]'))).click()
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="NextPage"]'))).click()
-    time.sleep(1)
+    if czy_ogr_ob_podatkowy=="NIE":
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/MAVSAnlageN[0]/VAnlageN[0]/AngabenZumArbeitslohn[0]/LStBKlassenEinsBisFuenf[0]"]'))).click()
+    else:
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/VAnlageN[0]/AngabenZumArbeitslohn[0]/LStBKlassenEinsBisFuenf[0]"]'))).click()
+
 if klasa_pit1 == 6 or klasa_pit2 == 6 or klasa_pit3 == 6:
     if sum_brutto_6 is not None:
-        driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlasseSechsUrlaubskasse(0)_fields(eruNArbLLStB_6_EinzE0200202)"]').send_keys(sum_brutto_6)
+        if czy_ogr_ob_podatkowy=="NIE":
+            driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlasseSechsUrlaubskasse(0)_fields(eruNArbLLStB_6_EinzE0200202)"]').send_keys(sum_brutto_6)
+        else:
+            driver.find_element("xpath", '//*[@id="Startseite(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlasseSechsUrlaubskasse(0)_fields(eruNArbLLStB_6_EinzE0200202)"]').send_keys(sum_brutto_6)
+
     if sum_podatek_6 is not None:
-        driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0 )_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlasseSechsUrlaubskasse(0)_fields(eruNArbLLStB_6_EinzE0200302)"]').send_keys(sum_podatek_6)
+        if czy_ogr_ob_podatkowy=="NIE":
+            driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0 )_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlasseSechsUrlaubskasse(0)_fields(eruNArbLLStB_6_EinzE0200302)"]').send_keys(sum_podatek_6)
+        else:
+            driver.find_element("xpath", '//*[@id="Startseite(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlasseSechsUrlaubskasse(0)_fields(eruNArbLLStB_6_EinzE0200302)"]').send_keys(sum_podatek_6)
+
     if sum_doplata_6 is not None:
-        driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlasseSechsUrlaubskasse(0)_fields(eruNArbLLStB_6_EinzE0200402)"]').send_keys(sum_doplata_6)
-    if sum_koscielny_6 is not None:
-        driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlasseSechsUrlaubskasse(0)_fields(eruNArbLLStB_6_EinzE0200502)"]').send_keys(sum_koscielny_6)
-    elif sum_koscielny_6==0:
-        pass
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/MAVSAnlageN[0]/VAnlageN[0]/AngabenZumArbeitslohn[0]/LStBKlasseSechsUrlaubskasse[0]"]'))).click()
+        if czy_ogr_ob_podatkowy=="NIE":
+            driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlasseSechsUrlaubskasse(0)_fields(eruNArbLLStB_6_EinzE0200402)"]').send_keys(sum_doplata_6)
+        else:
+            driver.find_element("xpath", '//*[@id="Startseite(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlasseSechsUrlaubskasse(0)_fields(eruNArbLLStB_6_EinzE0200402)"]').send_keys(sum_doplata_6)
+
+    if sum_koscielny_6 > 0 and czy_ogr_ob_podatkowy=="NIE":
+        if czy_ogr_ob_podatkowy=="NIE":
+            driver.find_element("xpath", '//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_AngabenZumArbeitslohn(0)_LStBKlasseSechsUrlaubskasse(0)_fields(eruNArbLLStB_6_EinzE0200502)"]').send_keys(sum_koscielny_6)
     
+    if czy_ogr_ob_podatkowy=="NIE":
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/MAVSAnlageN[0]/VAnlageN[0]/AngabenZumArbeitslohn[0]/LStBKlasseSechsUrlaubskasse[0]"]'))).click()
+    else:
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/VAnlageN[0]/AngabenZumArbeitslohn[0]/LStBKlasseSechsUrlaubskasse[0]"]'))).click()
+    time.sleep(2)
+try:
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="NextPage"]'))).click()
+except:
+    pass
+time.sleep(2)
 sum_kurzarbeitgeld = sum_kurzarbeitgeld_6 + sum_kurzarbeitgeld_1_5
 if sum_kurzarbeitgeld > 0:
-    kurzarbeitgeldURL = 'https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/LohnEntgeltersatzleistungen'
+    if czy_ogr_ob_podatkowy=="NIE":
+        kurzarbeitgeldURL = 'https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/LohnEntgeltersatzleistungen'
+    else:
+        kurzarbeitgeldURL = 'https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VAnlageN/LohnEntgeltersatzleistungen'
+
     driver.get(kurzarbeitgeldURL)
     time.sleep(2)
-    
-    wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_LohnEntgeltersatzleistungen(0)_Lohnersatzleistungen(0)_fields(eruNArbLErsatzleistBetragEinzE0202605)"]', sum_kurzarbeitgeld)
-    wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_LohnEntgeltersatzleistungen(0)_Lohnersatzleistungen(0)_fields(eruNArbLErsatzleistBetragEinzE0202604)"]', 'Kurzarbeitergeld')
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/MAVSAnlageN[0]/VAnlageN[0]/LohnEntgeltersatzleistungen[0]/Lohnersatzleistungen[0]"]'))).click()
+    if czy_ogr_ob_podatkowy=="NIE":
+        wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_LohnEntgeltersatzleistungen(0)_Lohnersatzleistungen(0)_fields(eruNArbLErsatzleistBetragEinzE0202605)"]', sum_kurzarbeitgeld)
+        wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_LohnEntgeltersatzleistungen(0)_Lohnersatzleistungen(0)_fields(eruNArbLErsatzleistBetragEinzE0202604)"]', 'Kurzarbeitergeld')
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/MAVSAnlageN[0]/VAnlageN[0]/LohnEntgeltersatzleistungen[0]/Lohnersatzleistungen[0]"]'))).click()
+    else:
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageN(0)_LohnEntgeltersatzleistungen(0)_Lohnersatzleistungen(0)_fields(eruNArbLErsatzleistBetragEinzE0202604)"]', sum_kurzarbeitgeld)
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageN(0)_LohnEntgeltersatzleistungen(0)_Lohnersatzleistungen(0)_fields(eruNArbLErsatzleistBetragEinzE0202605)"]', 'Kurzarbeitergeld')
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/VAnlageN[0]/LohnEntgeltersatzleistungen[0]/Lohnersatzleistungen[0]"]'))).click()
+
     time.sleep(2)
 if 1==1:
-    ubraniaURL = 'https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/Arbeitsmittel'
+    if czy_ogr_ob_podatkowy=="NIE":
+        ubraniaURL = 'https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/Arbeitsmittel'
+    else:
+        ubraniaURL = 'https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VAnlageN/Arbeitsmittel'
     driver.get(ubraniaURL)
     time.sleep(2)
     driver.get(ubraniaURL)
-    wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_Arbeitsmittel(0)_AufwendungenArbeitsmittel(0)_fields(eruNWkArbeitsmittelEinzE0204401)"]', 'typische Berufskleidung und Reinigungskosten')
-    wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_Arbeitsmittel(0)_AufwendungenArbeitsmittel(0)_fields(eruNWkArbeitsmittelEinzE0204402)"]', '110')
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/MAVSAnlageN[0]/VAnlageN[0]/Arbeitsmittel[0]/AufwendungenArbeitsmittel[0]"]'))).click()
+    if czy_ogr_ob_podatkowy=="NIE":
+        wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_Arbeitsmittel(0)_AufwendungenArbeitsmittel(0)_fields(eruNWkArbeitsmittelEinzE0204401)"]', 'typische Berufskleidung und Reinigungskosten')
+        wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_Arbeitsmittel(0)_AufwendungenArbeitsmittel(0)_fields(eruNWkArbeitsmittelEinzE0204402)"]', '110')
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/MAVSAnlageN[0]/VAnlageN[0]/Arbeitsmittel[0]/AufwendungenArbeitsmittel[0]"]'))).click()
+    else:
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageN(0)_Arbeitsmittel(0)_AufwendungenArbeitsmittel(0)_fields(eruNWkArbeitsmittelEinzE0204401)"]', 'typische Berufskleidung und Reinigungskosten')
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageN(0)_Arbeitsmittel(0)_AufwendungenArbeitsmittel(0)_fields(eruNWkArbeitsmittelEinzE0204402)"]', '110')
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/VAnlageN[0]/Arbeitsmittel[0]/AufwendungenArbeitsmittel[0]"]'))).click()
     time.sleep(1)
 
 if fahrkosten is not None:
-    fahrkostenUrl='https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/ReisekostenAuswaertstaetigkeit'
+    if czy_ogr_ob_podatkowy=="NIE":
+        fahrkostenUrl='https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/ReisekostenAuswaertstaetigkeit'
+    else:
+        fahrkostenUrl='https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VAnlageN/ReisekostenAuswaertstaetigkeit'
     driver.get(fahrkostenUrl)
     time.sleep(4)
-    wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_ReisekostenAuswaertstaetigkeit(0)_AwtFahrtkosten(0)_fields(eruNWkAWTFahrtE0205003)"]', 'Fahrkosten')
-    wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_ReisekostenAuswaertstaetigkeit(0)_AwtFahrtkosten(0)_fields(eruNWkAWTFahrtE0205004)"]', fahrkosten)
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/MAVSAnlageN[0]/VAnlageN[0]/ReisekostenAuswaertstaetigkeit[0]/AwtFahrtkosten[0]"]'))).click()
+    if czy_ogr_ob_podatkowy=="NIE":
+        wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_ReisekostenAuswaertstaetigkeit(0)_AwtFahrtkosten(0)_fields(eruNWkAWTFahrtE0205003)"]', 'Fahrkosten')
+        wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_ReisekostenAuswaertstaetigkeit(0)_AwtFahrtkosten(0)_fields(eruNWkAWTFahrtE0205004)"]', fahrkosten)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/MAVSAnlageN[0]/VAnlageN[0]/ReisekostenAuswaertstaetigkeit[0]/AwtFahrtkosten[0]"]'))).click()
+    else:
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageN(0)_ReisekostenAuswaertstaetigkeit(0)_FirmenwagenOderSammelbefoerderung(0)_fields(eruNWkAWTFahrtE0205003)"]', 'Fahrkosten')
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageN(0)_ReisekostenAuswaertstaetigkeit(0)_FirmenwagenOderSammelbefoerderung(0)_fields(eruNWkAWTFahrtE0205004)"]', fahrkosten)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/VAnlageN[0]/ReisekostenAuswaertstaetigkeit[0]/FirmenwagenOderSammelbefoerderung[0]"]'))).click()
 
 if ubernachtung is not None:
-    ubernachtungURL='https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/ReisekostenAuswaertstaetigkeit'
+    if czy_ogr_ob_podatkowy=="NIE":
+        ubernachtungURL='https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/ReisekostenAuswaertstaetigkeit'
+    else:
+        ubernachtungURL='https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VAnlageN/ReisekostenAuswaertstaetigkeit'
+
     driver.get(ubernachtungURL)
     time.sleep(2)
-    wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_ReisekostenAuswaertstaetigkeit(0)_AwtUebernachtungskosten(0)_fields(eruNWkAWTUebernachtE0206301)"]', 'Ubernachtungskosten')
-    wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_ReisekostenAuswaertstaetigkeit(0)_AwtUebernachtungskosten(0)_fields(eruNWkAWTUebernachtE0206302)"]', ubernachtung)
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/MAVSAnlageN[0]/VAnlageN[0]/ReisekostenAuswaertstaetigkeit[0]/AwtUebernachtungskosten[0]"]'))).click()
+    if czy_ogr_ob_podatkowy=="NIE":
+        wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_ReisekostenAuswaertstaetigkeit(0)_AwtUebernachtungskosten(0)_fields(eruNWkAWTUebernachtE0206301)"]', 'Ubernachtungskosten')
+        wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_ReisekostenAuswaertstaetigkeit(0)_AwtUebernachtungskosten(0)_fields(eruNWkAWTUebernachtE0206302)"]', ubernachtung)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/MAVSAnlageN[0]/VAnlageN[0]/ReisekostenAuswaertstaetigkeit[0]/AwtUebernachtungskosten[0]"]'))).click()
+    else:
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageN(0)_ReisekostenAuswaertstaetigkeit(0)_Uebernachtungskosten(0)_fields(eruNWkAWTUebernachtE0206301)"]', 'Ubernachtungskosten')
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageN(0)_ReisekostenAuswaertstaetigkeit(0)_Uebernachtungskosten(0)_fields(eruNWkAWTUebernachtE0206302)"]', ubernachtung)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/VAnlageN[0]/ReisekostenAuswaertstaetigkeit[0]/Uebernachtungskosten[0]"]'))).click()
 
 if w_kabinie is not None:
-    wKabinieURL='https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/ReisekostenAuswaertstaetigkeit'
+    if czy_ogr_ob_podatkowy=="NIE":
+        wKabinieURL='https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/ReisekostenAuswaertstaetigkeit'
+    else:
+        wKabinieURL='https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VAnlageN/ReisekostenAuswaertstaetigkeit'
+
     driver.get(wKabinieURL)
     time.sleep(4)
-    wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_ReisekostenAuswaertstaetigkeit(0)_fields(eruNWkAWTPB_KraftfE0206501)"]', w_kabinie)
+    if czy_ogr_ob_podatkowy=="NIE":
+        wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_ReisekostenAuswaertstaetigkeit(0)_fields(eruNWkAWTPB_KraftfE0206501)"]', w_kabinie)
+    else:
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageN(0)_ReisekostenAuswaertstaetigkeit(0)_fields(eruNWkAWTPB_KraftfE0206501)"]', w_kabinie)
     pyautogui.press('enter')
 
 if h24 is not None:
-    h24URL='https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/PauschbetraegeVerpflegung'
+    if czy_ogr_ob_podatkowy=="NIE":
+        h24URL='https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/PauschbetraegeVerpflegung'
+    else:
+        h24URL='https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VAnlageN/PauschbetraegeVerpflegung'
     driver.get(h24URL)
     time.sleep(4)
     driver.get(h24URL)
-    wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_PauschbetraegeVerpflegung(0)_fields(eruNWkVMAInlE0205409)"]', h24)
+    if czy_ogr_ob_podatkowy=="NIE":
+        wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_PauschbetraegeVerpflegung(0)_fields(eruNWkVMAInlE0205409)"]', h24)
+    else:
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageN(0)_PauschbetraegeVerpflegung(0)_fields(eruNWkVMAInlE0205409)"]', h24)
     pyautogui.press('enter')
 
 if h8 is not None:
-    h8URL='https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/PauschbetraegeVerpflegung'
+    if czy_ogr_ob_podatkowy=="NIE":
+        h8URL='https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/PauschbetraegeVerpflegung'
+    else:
+        h8URL='https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VAnlageN/PauschbetraegeVerpflegung'
+
     driver.get(h8URL)
     time.sleep(4)
-    wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_PauschbetraegeVerpflegung(0)_fields(eruNWkVMAInlE0205201)"]', h8)
+    if czy_ogr_ob_podatkowy=="NIE":
+        wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_PauschbetraegeVerpflegung(0)_fields(eruNWkVMAInlE0205201)"]', h8)
+    else:
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageN(0)_PauschbetraegeVerpflegung(0)_fields(eruNWkVMAInlE0205201)"]', h8)
     pyautogui.press('enter')
 
 if an_und_ab is not None:
-    abUndAbURL='https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/PauschbetraegeVerpflegung'
+    if czy_ogr_ob_podatkowy=="NIE":
+        abUndAbURL='https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/PauschbetraegeVerpflegung'
+    else:
+        abUndAbURL='https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VAnlageN/PauschbetraegeVerpflegung'
     driver.get(abUndAbURL)
     time.sleep(4)
-    wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_PauschbetraegeVerpflegung(0)_fields(eruNWkVMAInlE0205302)"]', an_und_ab)
+    if czy_ogr_ob_podatkowy=="NIE":
+        wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_PauschbetraegeVerpflegung(0)_fields(eruNWkVMAInlE0205302)"]', an_und_ab)
+    else:
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageN(0)_PauschbetraegeVerpflegung(0)_fields(eruNWkVMAInlE0205302)"]', an_und_ab)
     pyautogui.press('enter')
 
 if pracodawca is not None:
-    pracodawcaURL='https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/PauschbetraegeVerpflegung'
+    if czy_ogr_ob_podatkowy=="NIE":
+        pracodawcaURL='https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/MAVSAnlageN/VAnlageN/0/PauschbetraegeVerpflegung'
+    else:
+        pracodawcaURL='https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VAnlageN/PauschbetraegeVerpflegung'
+        
     driver.get(pracodawcaURL)
     time.sleep(4)
-    wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_PauschbetraegeVerpflegung(0)_fields(eruNWkVMAVMA_ErsatzE0205108)"]', pracodawca)
+    if czy_ogr_ob_podatkowy=="NIE":
+        wait_and_send_keys('//*[@id="Startseite(0)_MAVSAnlageN(0)_VAnlageN(0)_PauschbetraegeVerpflegung(0)_fields(eruNWkVMAVMA_ErsatzE0205108)"]', pracodawca)
+    else:
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageN(0)_PauschbetraegeVerpflegung(0)_fields(eruNWkVMAVMA_ErsatzE0205108)"]', pracodawca)
     time.sleep(1)
     pyautogui.press('enter')
 time.sleep(2)
 
 #Kirchensteuer
-if koscielny_pit1 or koscielny_pit2 or koscielny_pit3:
+if koscielny_pit1 or koscielny_pit2 or koscielny_pit3 and czy_ogr_ob_podatkowy=="NIE":
     koscielny_pit1 = round(int(koscielny_pit1)) if koscielny_pit1 else 0
     koscielny_pit2 = round(int(koscielny_pit2)) if koscielny_pit2 else 0
     koscielny_pit3 = round(int(koscielny_pit3)) if koscielny_pit3 else 0
 
-    koscielnyURL='https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/VAnlageSA/Kirchensteuer'
-    driver.get(koscielnyURL)
     koscielny_Caly = koscielny_pit1 + koscielny_pit2 + koscielny_pit3
-    wait_and_send_keys('//*[@id="Startseite(0)_VAnlageSA(0)_Kirchensteuer(0)_KiSt(0)_fields(eruSAKiStGezahltEinzE0108003)"]', 'Kirchensteuer laut Lohnsteuerbescheinigung steuerpflichtige Person / Ehemann / Person A')
-    wait_and_send_keys('//*[@id="Startseite(0)_VAnlageSA(0)_Kirchensteuer(0)_KiSt(0)_fields(eruSAKiStGezahltEinzE0108004)"]', koscielny_Caly)
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/VAnlageSA[0]/Kirchensteuer[0]/KiSt[0]"]'))).click()
-    time.sleep(2)
+    if koscielny_Caly > 0:
+        koscielnyURL='https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/VAnlageSA/Kirchensteuer'
+        driver.get(koscielnyURL)
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageSA(0)_Kirchensteuer(0)_KiSt(0)_fields(eruSAKiStGezahltEinzE0108003)"]', 'Kirchensteuer laut Lohnsteuerbescheinigung steuerpflichtige Person / Ehemann / Person A')
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageSA(0)_Kirchensteuer(0)_KiSt(0)_fields(eruSAKiStGezahltEinzE0108004)"]', koscielny_Caly)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="CreateMzbItem/Startseite[0]/VAnlageSA[0]/Kirchensteuer[0]/KiSt[0]"]'))).click()
+        time.sleep(2)
 
 #Anlage Vorsorgeaufwand: Angaben zu Vorsorgeaufwendungen
 if nr22 is not None or nr23 is not None:
-    nr22i23URL = 'https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/VAnlageVor/BeitraegeZurAltersvorsorge'
+    if czy_ogr_ob_podatkowy=="NIE":
+        nr22i23URL = 'https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/VAnlageVor/BeitraegeZurAltersvorsorge'
+    else:
+        nr22i23URL = 'https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VAnlageVor/BeitraegeZurAltersvorsorge'
     driver.get(nr22i23URL)
-    try:
-        WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.XPATH, '//*[@id="delete_btn_readMode_Startseite(0)_VAnlageVor(0)_BeitraegeZurAltersvorsorge(0)_BeitraegeZurAltersvorsorgeMZB(0)"]'))).click()
-        WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.XPATH, '//*[@id="confirm_mzbLoeschenModal"]'))).click()
-    except:
-        pass
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="edit_btn_Startseite(0)_VAnlageVor(0)_BeitraegeZurAltersvorsorge(0)_BeitraegeZurAltersvorsorgeMZB(0)"]'))).click()
-    wait_and_send_keys('//*[@id="Startseite(0)_VAnlageVor(0)_BeitraegeZurAltersvorsorge(0)_BeitraegeZurAltersvorsorgeMZB(0)_fields(eruVORAVorE2000401)"]', nr23)
-    wait_and_send_keys('//*[@id="Startseite(0)_VAnlageVor(0)_BeitraegeZurAltersvorsorge(0)_BeitraegeZurAltersvorsorgeMZB(0)_fields(eruVORAVorE2000801)"]', nr22)
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="UpdateMzbItem/Startseite[0]/VAnlageVor[0]/BeitraegeZurAltersvorsorge[0]/BeitraegeZurAltersvorsorgeMZB[0]"]'))).click()
-
+    time.sleep(2)
+    if czy_ogr_ob_podatkowy=="NIE":
+        try:
+            WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.XPATH, '//*[@id="delete_btn_readMode_Startseite(0)_VAnlageVor(0)_BeitraegeZurAltersvorsorge(0)_BeitraegeZurAltersvorsorgeMZB(0)"]'))).click()
+            WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.XPATH, '//*[@id="confirm_mzbLoeschenModal"]'))).click()
+        except:
+            pass
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="edit_btn_Startseite(0)_VAnlageVor(0)_BeitraegeZurAltersvorsorge(0)_BeitraegeZurAltersvorsorgeMZB(0)"]'))).click()
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageVor(0)_BeitraegeZurAltersvorsorge(0)_BeitraegeZurAltersvorsorgeMZB(0)_fields(eruVORAVorE2000401)"]', nr23)
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageVor(0)_BeitraegeZurAltersvorsorge(0)_BeitraegeZurAltersvorsorgeMZB(0)_fields(eruVORAVorE2000801)"]', nr22)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="UpdateMzbItem/Startseite[0]/VAnlageVor[0]/BeitraegeZurAltersvorsorge[0]/BeitraegeZurAltersvorsorgeMZB[0]"]'))).click()
+    else:
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageVor(0)_BeitraegeZurAltersvorsorge(0)_fields(eruVORAVorE2000401)"]', nr23)
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageVor(0)_BeitraegeZurAltersvorsorge(0)_fields(eruVORAVorE2000801)"]', nr22)
+    pyautogui.press('enter')
+    
 if nr25 is not None:
-    nr25i26URL = 'https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/VAnlageVor/BeitraegeInlGesKrankenPflegevers'
+    if czy_ogr_ob_podatkowy=="NIE":
+        nr25i26URL = 'https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/VAnlageVor/BeitraegeInlGesKrankenPflegevers'
+    else:
+        nr25i26URL = 'https://www.elster.de/eportal/interpreter/eingabe/est12-2023/Startseite/VAnlageVor/BeitraegeGesKrankenPflegevers'
     driver.get(nr25i26URL)
-    try:
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="delete_btn_Startseite(0)_VAnlageVor(0)_BeitraegeInlGesKrankenPflegevers(0)_MZBBeitraegeInlGesKrankenPflegeversMZB(0)"]'))).click()
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="confirm_mzbLoeschenModal"]'))).click()
-    except:
-        pass
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="edit_btn_Startseite(0)_VAnlageVor(0)_BeitraegeInlGesKrankenPflegevers(0)_MZBBeitraegeInlGesKrankenPflegeversMZB(0)"]'))).click()
-    wait_and_send_keys('//*[@id="Startseite(0)_VAnlageVor(0)_BeitraegeInlGesKrankenPflegevers(0)_MZBBeitraegeInlGesKrankenPflegeversMZB(0)_fields(eruVORBeitr_g_KV_PV_InlANE2001203)"]', nr25)
-    if nr26 is None:
-        nr26=0
-    wait_and_send_keys('//*[@id="Startseite(0)_VAnlageVor(0)_BeitraegeInlGesKrankenPflegevers(0)_MZBBeitraegeInlGesKrankenPflegeversMZB(0)_fields(eruVORBeitr_g_KV_PV_InlANE2001505)"]', nr26)
+    time.sleep(2)
+    if czy_ogr_ob_podatkowy=="NIE":
+        try:
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="delete_btn_Startseite(0)_VAnlageVor(0)_BeitraegeInlGesKrankenPflegevers(0)_MZBBeitraegeInlGesKrankenPflegeversMZB(0)"]'))).click()
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="confirm_mzbLoeschenModal"]'))).click()
+        except:
+            pass
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="edit_btn_Startseite(0)_VAnlageVor(0)_BeitraegeInlGesKrankenPflegevers(0)_MZBBeitraegeInlGesKrankenPflegeversMZB(0)"]'))).click()
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageVor(0)_BeitraegeInlGesKrankenPflegevers(0)_MZBBeitraegeInlGesKrankenPflegeversMZB(0)_fields(eruVORBeitr_g_KV_PV_InlANE2001203)"]', nr25)
+        if nr26 is None:
+            nr26=0
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageVor(0)_BeitraegeInlGesKrankenPflegevers(0)_MZBBeitraegeInlGesKrankenPflegeversMZB(0)_fields(eruVORBeitr_g_KV_PV_InlANE2001505)"]', nr26)
+    else:
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageVor(0)_BeitraegeGesKrankenPflegevers(0)_fields(eruVORBeitr_g_KV_PV_InlANE2001203)"]', nr25)
+        if nr26 is None:
+            nr26=0
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageVor(0)_BeitraegeGesKrankenPflegevers(0)_fields(eruVORBeitr_g_KV_PV_InlANE2001505)"]', nr26)
     pyautogui.press('enter')
 
-if nr27 is not None:
+if nr27 is not None and czy_ogr_ob_podatkowy=="NIE":
     nr27URL = 'https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/VAnlageVor/WeitereSonstigeVorsorgeaufwendungen'
     driver.get(nr27URL)
     try:
@@ -1204,60 +1408,59 @@ if nr27 is not None:
     time.sleep(2)
 
 #ZAROBKI W POLSCE WA-EST
-
-WaEstUrl = 'https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/VAnlageWAESt'
-time.sleep(1)
-driver.get(WaEstUrl)
-if ZarobkiMezaNiem is None:
-        ZarobkiMezaNiem = 0
-checkbox1 = driver.find_element(By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0109906)"]')
-checkbox2 = driver.find_element(By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStEheg_EU_EWRE0105901)"]')
-if ZarobkiMezaNiem is not None:
-    ZarobkiZonyNiem = int(ZarobkiZonyNiem)
-if ZarobkiZonyNiem is not None:
-    if ZarobkiMezaNiem + ZarobkiZonyNiem < 20000:
-        if checkbox1.is_selected():
-            if checkbox2.is_selected():
-                WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStEheg_EU_EWRE0105901)"]'))).click()
-        else:
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0109906)"]'))).click()
-    else:
-        if checkbox2.is_selected():
+if czy_ogr_ob_podatkowy == "NIE":
+    WaEstUrl = 'https://www.elster.de/eportal/interpreter/eingabe/est-2023/Startseite/VAnlageWAESt'
+    time.sleep(1)
+    driver.get(WaEstUrl)
+    if ZarobkiMezaNiem is None:
+            ZarobkiMezaNiem = 0
+    checkbox1 = driver.find_element(By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0109906)"]')
+    checkbox2 = driver.find_element(By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStEheg_EU_EWRE0105901)"]')
+    if ZarobkiZonyNiem is not None:
+        ZarobkiZonyNiem = int(ZarobkiZonyNiem)
+    if ZarobkiZonyNiem is not None:
+        if ZarobkiMezaNiem + ZarobkiZonyNiem < 20000:
             if checkbox1.is_selected():
+                if checkbox2.is_selected():
+                    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStEheg_EU_EWRE0105901)"]'))).click()
+            else:
                 WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0109906)"]'))).click()
         else:
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStEheg_EU_EWRE0105901)"]'))).click()
-else:
-    if ZarobkiMezaNiem < 20000:
-        if checkbox1.is_selected():
             if checkbox2.is_selected():
+                if checkbox1.is_selected():
+                    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0109906)"]'))).click()
+            else:
                 WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStEheg_EU_EWRE0105901)"]'))).click()
-        else:
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0109906)"]'))).click()
     else:
-        if checkbox2.is_selected():
+        if ZarobkiMezaNiem < 20000:
             if checkbox1.is_selected():
+                if checkbox2.is_selected():
+                    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStEheg_EU_EWRE0105901)"]'))).click()
+            else:
                 WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0109906)"]'))).click()
         else:
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStEheg_EU_EWRE0105901)"]'))).click()
+            if checkbox2.is_selected():
+                if checkbox1.is_selected():
+                    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0109906)"]'))).click()
+            else:
+                WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStEheg_EU_EWRE0105901)"]'))).click()
 
-try:
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0105303)"]'))).clear()
-except:
-    pass
-time.sleep(1)
-input_field = driver.find_element(By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0105301)"]')
-input_field.clear()
-time.sleep(.5)
-wait_and_send_keys('//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0110306)"]', 'Polen')
-wait_and_send_keys('//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0105301)"]', ZarobkiMezaNiem)
-if ZarobkiZonyNiem is not None:
-    ZarobkiZonyNiem = int(ZarobkiZonyNiem)
-    input_field = driver.find_element(By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0105303)"]')
+    try:
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0105303)"]'))).clear()
+    except:
+        pass
+    time.sleep(1)
+    input_field = driver.find_element(By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0105301)"]')
     input_field.clear()
     time.sleep(.5)
-    wait_and_send_keys('//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0105303)"]', ZarobkiZonyNiem)
-    wait_and_send_keys('//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0110307)"]', 'Polen')
+    wait_and_send_keys('//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0110306)"]', 'Polen')
+    wait_and_send_keys('//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0105301)"]', ZarobkiMezaNiem)
+    if ZarobkiZonyNiem is not None:
+        input_field = driver.find_element(By.XPATH, '//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0105303)"]')
+        input_field.clear()
+        time.sleep(.5)
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0105303)"]', ZarobkiZonyNiem)
+        wait_and_send_keys('//*[@id="Startseite(0)_VAnlageWAESt(0)_fields(eruWA_EStAntrag_unb_StpflE0110307)"]', 'Polen')
 
 time.sleep(1)
 WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="SwitchModusPruefen"]'))).click()
